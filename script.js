@@ -9,11 +9,15 @@ var cCL = 1000;
 var mapa1, mapa2, mapa3, mapadx, mapady;
 
 function crearMapas() {
-    mapa1 = fRuido2(cCL, 2, 5);
-    mapa2 = fRuido2(cCL, 2, 5);
-    mapa3 = fRuido2(cCL, 2, 5);
-    mapadx = fRuido2(cCL, 4, 4);
-    mapady = fRuido2(cCL, 4, 4);
+    var A = Math.floor(fNumAl() * 3 + 2);
+    var B = Math.floor(fNumAl() * 3 + 2);
+    var C = Math.floor(fNumAl() * 3 + 2);
+    var D = Math.floor(fNumAl() * 3 + 3);
+    mapa1 = fRuido2(cCL, A, B);
+    mapa2 = fRuido2(cCL, A, B);
+    mapa3 = fRuido2(cCL, A, B);
+    mapadx = fRuido2(cCL, C, D);
+    mapady = fRuido2(cCL, C, D);
 }
 
 var cp = [
@@ -40,6 +44,12 @@ function empezar() {
 
     crearColores(8);
 
+    dibujar();
+}
+
+function empezar2() {
+
+    crearMapas();
     dibujar();
 }
 
