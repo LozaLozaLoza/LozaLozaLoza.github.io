@@ -35,7 +35,7 @@ function empezar() {
     alert("con el detalle " + Det + " hay " + colores.length + " colores.");
     */
     sA = Math.floor(Math.random() * 9999999);
-    console.log(sA);
+    //console.log(sA);
 
     resize();
     window.addEventListener('resize', resize, false);
