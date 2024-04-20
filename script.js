@@ -1,9 +1,12 @@
 var can = document.getElementById("can");
 var cv = can.getContext("2d");
 
-var listaDeColores = ["#000000", "#0000ff", "#00ff00", "#00ffff", "#ff0000", "#ff00ff", "ffff00", "#000000"];
+var verResultado = 0;
+
+var listaDeColores = ["#000000", "#0000ff", "#00ff00", "#00ffff", "#ff0000", "#ff00ff", "ffff00", "#ffffff"];
 
 var nBuc = 2;
+var nivel = 0;
 var ancho = nBuc * 2 + 2;
 var tiles = [];
 var tilesP = [];
@@ -16,27 +19,37 @@ cv.lineWidth = 50 / ancho;
 
 function next() {
     if (compro()) {
-        if (Math.random() < 0.1) {
-            nBuc++;
+        nivel++;
+        if (Math.floor(nivel / 5) > 1) {
+            nBuc = Math.floor(nivel / 5);
             if (nBuc == 9) {
                 alert("¡Te has pasado el juego!");
-                nBuc = 0;
+                nBuc = 2;
+                nivel = 0;
             }
+        } else {
+            nBuc = 2;
         }
         ancho = nBuc * 2 + 2;
         cv.lineWidth = 50 / ancho;
         empezar();
     }
+
 }
 
 function NEXT() {
-    if (Math.random() < 0.1) {
-        nBuc++;
-        if (nBuc == 10) {
-            alert("te has pasado el juego!");
+    nivel++;
+    if (Math.floor(nivel / 5) > 1) {
+        nBuc = Math.floor(nivel / 5);
+        if (nBuc == 9) {
+            alert("¡Te has pasado el juego!");
             nBuc = 2;
+            nivel = 0;
         }
+    } else {
+        nBuc = 2;
     }
+    console.log(nBuc);
     ancho = nBuc * 2 + 2;
     cv.lineWidth = 50 / ancho;
     empezar();
@@ -98,10 +111,10 @@ function empezar() {
 }
 
 function deshacer() {
-    for (var d = 0; d < ancho; d++) {
+    var R = Math.random() * ancho * ancho + ancho * 2;
+    for (var d = 0; d < R; d++) {
         var D = Math.random() * ancho;
         bucleElegido++;
-        console.log(bucleElegido);
         if (bucleElegido >= nBuc) {
             bucleElegido = 0;
         }
@@ -146,6 +159,7 @@ function fCrearTiles(A) {
 }
 
 function fCrearBucles(B) {
+    bucles = [];
 
     for (var b = 0; b < B; b++) {
 
@@ -327,8 +341,12 @@ function dibujar() {
             }
         }
 
-        if (b == bucleElegido) {
-            cv.fillStyle = "#ff0000";
+        if (verResultado == 0) {
+            if (b == bucleElegido) {
+                cv.fillStyle = "#ff0000";
+            } else {
+                cv.fillStyle = "#000000";
+            }
         } else {
             cv.fillStyle = "#000000";
         }
@@ -399,28 +417,55 @@ function dibujar() {
         }
     }
     */
+    if (verResultado == 0) {
+        for (var i = 1; i < ancho - 1; i++) {
+            for (var j = 1; j < ancho - 1; j++) {
+                if (tilesP[i][j] !== -1) {
+                    if (tilesP[i][j].length == 2) {
+                        cv.fillStyle = bucles[tilesP[i][j][0]].color;
+                        cv.beginPath();
+                        cv.arc(i * 1000 / ancho + 500 / ancho, 1000 - j * 1000 / ancho - 500 / ancho, 300 / ancho, 0, Math.PI);
+                        cv.fill();
+                        cv.stroke();
 
-    for (var i = 1; i < ancho - 1; i++) {
-        for (var j = 1; j < ancho - 1; j++) {
-            if (tilesP[i][j] !== -1) {
-                if (tilesP[i][j].length == 2) {
-                    cv.fillStyle = bucles[tilesP[i][j][0]].color;
-                    cv.beginPath();
-                    cv.arc(i * 1000 / ancho + 500 / ancho, 1000 - j * 1000 / ancho - 500 / ancho, 300 / ancho, 0, Math.PI);
-                    cv.fill();
-                    cv.stroke();
+                        cv.fillStyle = bucles[tilesP[i][j][1]].color;
+                        cv.beginPath();
+                        cv.arc(i * 1000 / ancho + 500 / ancho, 1000 - j * 1000 / ancho - 500 / ancho, 300 / ancho, Math.PI, 2 * Math.PI);
+                        cv.fill();
+                        cv.stroke();
+                    } else {
+                        cv.fillStyle = bucles[tilesP[i][j][0]].color;
+                        cv.beginPath();
+                        cv.arc(i * 1000 / ancho + 500 / ancho, 1000 - j * 1000 / ancho - 500 / ancho, 300 / ancho, 0, 2 * Math.PI);
+                        cv.fill();
+                        cv.stroke();
+                    }
+                }
+            }
+        }
+    } else {
+        for (var i = 1; i < ancho - 1; i++) {
+            for (var j = 1; j < ancho - 1; j++) {
+                if (tilesD[i][j] !== -1) {
+                    if (tilesD[i][j].length == 2) {
+                        cv.fillStyle = bucles[tilesD[i][j][0]].color;
+                        cv.beginPath();
+                        cv.arc(i * 1000 / ancho + 500 / ancho, 1000 - j * 1000 / ancho - 500 / ancho, 300 / ancho, 0, Math.PI);
+                        cv.fill();
+                        cv.stroke();
 
-                    cv.fillStyle = bucles[tilesP[i][j][1]].color;
-                    cv.beginPath();
-                    cv.arc(i * 1000 / ancho + 500 / ancho, 1000 - j * 1000 / ancho - 500 / ancho, 300 / ancho, Math.PI, 2 * Math.PI);
-                    cv.fill();
-                    cv.stroke();
-                } else {
-                    cv.fillStyle = bucles[tilesP[i][j][0]].color;
-                    cv.beginPath();
-                    cv.arc(i * 1000 / ancho + 500 / ancho, 1000 - j * 1000 / ancho - 500 / ancho, 300 / ancho, 0, 2 * Math.PI);
-                    cv.fill();
-                    cv.stroke();
+                        cv.fillStyle = bucles[tilesD[i][j][1]].color;
+                        cv.beginPath();
+                        cv.arc(i * 1000 / ancho + 500 / ancho, 1000 - j * 1000 / ancho - 500 / ancho, 300 / ancho, Math.PI, 2 * Math.PI);
+                        cv.fill();
+                        cv.stroke();
+                    } else {
+                        cv.fillStyle = bucles[tilesD[i][j][0]].color;
+                        cv.beginPath();
+                        cv.arc(i * 1000 / ancho + 500 / ancho, 1000 - j * 1000 / ancho - 500 / ancho, 300 / ancho, 0, 2 * Math.PI);
+                        cv.fill();
+                        cv.stroke();
+                    }
                 }
             }
         }
@@ -428,13 +473,11 @@ function dibujar() {
 }
 
 function clik(Cx) {
-    console.log(Cx);
-    if (Cx < window.innerWidth / 2) {
+    if (Cx > window.innerWidth / 2) {
         next();
         mover();
     } else {
         bucleElegido++;
-        console.log(bucleElegido);
         if (bucleElegido >= nBuc) {
             bucleElegido = 0;
         }
@@ -463,5 +506,16 @@ function mover() {
         tilesP[X1][j] = tilesP[X1][j - 1];
     }
     tilesP[X1][Y1 + 1] = A;
+    dibujar();
+}
+
+function ver() {
+    verResultado = 1;
+    dibujar();
+    /*
+    */
+}
+function noVer() {
+    verResultado = 0;
     dibujar();
 }
