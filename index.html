@@ -1,12 +1,62 @@
-<html>
+<!doctype html>
+<html lang="es">
 <head>
-    <title>STR</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Puntos y Cajas — Móvil</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
 </head>
-<body onload="empezar1()">
-    <button onmousedown="ver()" onmouseup="noVer()">VER</button>
-    <canvas id="can" width="1000" height="1000" style="border: 0px solid black; position: fixed; top: 0px; left: 119px; width: 541px; height: 541px;"></canvas>
-    <script src="script.js"></script>
+<body style="touch-action:none; -webkit-user-select:none; -ms-touch-action:none;">
+    <div class="app">
+        <header class="header">
+            <div class="brand">
+                <h1>Puntos y Cajas</h1>
+                <div class="subtitle">Toca para dibujar líneas</div>
+            </div>
 
-</body>
+            <div class="controls">
+                <select id="modoSelect" aria-label="Seleccionar modo">
+                    <option value="pvp">Persona vs Persona</option>
+                    <option value="pvia">Persona vs IA</option>
+                </select>
+
+                <select id="sizeSelect" aria-label="Seleccionar tamaño">
+                    <option value="3">3x3 puntos</option>
+                    <option value="4" selected>4x4 puntos</option>
+                    <option value="5">5x5 puntos</option>
+                </select>
+
+                <button id="resetBtn" aria-label="Reiniciar partida">Reiniciar</button>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="canvasWrap">
+                <canvas id="gameCanvas" aria-label="Tablero de Puntos y Cajas"></canvas>
+            </div>
+
+            <aside class="info" aria-live="polite">
+                <div class="scoreRow">
+                    <div class="scoreBlock">
+                        <div class="label">Jugador 1</div>
+                        <div id="puntuacion1" class="value">0</div>
+                    </div>
+
+                    <div class="scoreBlock">
+                        <div class="label" id="player2Label">Jugador 2</div>
+                        <div id="puntuacion2" class="value">0</div>
+                    </div>
+                </div>
+
+                <div class="stat">
+                    <div class="label">Turno</div>
+                    <div id="turnoDisplay" class="value">Jugador 1</div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="script.js" defer></script>
+</bodystyle="touch-action:none;>
 </html>
