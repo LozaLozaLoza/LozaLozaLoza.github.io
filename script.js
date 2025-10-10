@@ -1,5 +1,4 @@
-﻿// app.js — Puntos y Cajas (móvil) con PvP / PvIA, touch y pausas visuales
-// Variables en castellano y funciones autónomas
+// Comentario
 
 // DOM
 const canvas = document.getElementById('gameCanvas');
@@ -31,8 +30,8 @@ let ratonY = null;
 let mostrarPuntero = false;
 
 // IA params
-const TIEMPO_MAX_MS = 2000;
-const PROFUNDIDAD_LIMITE = 30;
+const TIEMPO_MAX_MS = 700;
+const PROFUNDIDAD_LIMITE = 12;
 let nodosBuscadosUltima = 0;
 let tiempoUltimaBusquedaMs = 0;
 
@@ -307,11 +306,133 @@ function manejarClicAt(x, y) {
 }
 
 // --- IA: clonados, heurística y minimax con tiempo ---
-function clonarEstado(e) { return { horizontales: e.horizontales.map(r => r.slice()), verticales: e.verticales.map(r => r.slice()), cajas: e.cajas.map(r => r.slice()), puntuacionJugador1: e.puntuacionJugador1, puntuacionJugador2: e.puntuacionJugador2, turnoJugador1: e.turnoJugador1 }; }
-function comprobarCajasEnEstado(e) { const completadas = []; for (let f = 0; f < tamaño - 1; f++) { for (let c = 0; c < tamaño - 1; c++) { if (!e.cajas[f][c] && e.horizontales[f][c] && e.horizontales[f + 1][c] && e.verticales[f][c] && e.verticales[f][c + 1]) completadas.push({ f, c }); } } return completadas; }
-function aplicarMovimientoEnEstado(e, mov, byIA) { if (mov.tipo === 'h') e.horizontales[mov.fil][mov.col] = true; else e.verticales[mov.fil][mov.col] = true; const comp = comprobarCajasEnEstado(e); if (comp.length > 0) { const dueño = byIA ? 'jugador2' : 'jugador1'; for (const b of comp) e.cajas[b.f][b.c] = dueño; if (byIA) e.puntuacionJugador2 += comp.length; else e.puntuacionJugador1 += comp.length; } else e.turnoJugador1 = !e.turnoJugador1; return comp.length; }
-function movimientosPosiblesDesdeEstado(e) { const movs = []; for (let f = 0; f < tamaño; f++) for (let c = 0; c < tamaño - 1; c++) if (!e.horizontales[f][c]) movs.push({ tipo: 'h', fil: f, col: c }); for (let f = 0; f < tamaño - 1; f++) for (let c = 0; c < tamaño; c++) if (!e.verticales[f][c]) movs.push({ tipo: 'v', fil: f, col: c }); return movs; }
-function evaluarEstado(e) { let val = e.puntuacionJugador2 - e.puntuacionJugador1; let tresIA = 0, tresP = 0; for (let f = 0; f < tamaño - 1; f++) { for (let c = 0; c < tamaño - 1; c++) { if (e.cajas[f][c]) continue; let lados = 0; if (e.horizontales[f][c]) lados++; if (e.horizontales[f + 1][c]) lados++; if (e.verticales[f][c]) lados++; if (e.verticales[f][c + 1]) lados++; if (e.turnoJugador1 === false) { if (lados === 3) tresIA++; } else { if (lados === 3) tresP++; } } } return val + 0.5 * (tresIA - tresP); }
+function clonarEstado(e) {
+     return { 
+        horizontales: e.horizontales.map(r => r.slice()),
+        verticales: e.verticales.map(r => r.slice()),
+        cajas: e.cajas.map(r => r.slice()),
+        puntuacionJugador1: e.puntuacionJugador1,
+        puntuacionJugador2: e.puntuacionJugador2,
+        turnoJugador1: e.turnoJugador1 
+    }; 
+}
+
+function comprobarCajasEnEstado(e) {
+    const completadas = [];
+    for (let f = 0; f < tamaño - 1; f++) {
+        for (let c = 0; c < tamaño - 1; c++) {
+            if (!e.cajas[f][c] && e.horizontales[f][c] && e.horizontales[f + 1][c] && e.verticales[f][c] && e.verticales[f][c + 1]) {
+                completadas.push({ f, c }); 
+            }
+        } 
+    } 
+    return completadas; 
+}ç
+// Aplica un movimiento sobre un estado clonado/simulado.
+// - e: estado (con estructuras horizontales, verticales, cajas, puntuaciones y turnoJugador1)
+// - mov: { tipo: 'h'|'v', fil: number, col: number }
+// - byIA: boolean (true si la jugada la hace la IA, que se considera jugador2)
+// Devuelve el número de cajas completadas por este movimiento.
+function aplicarMovimientoEnEstado(e, mov, byIA) {
+  // Marcar la arista correspondiente
+  if (mov.tipo === 'h') {
+    e.horizontales[mov.fil][mov.col] = true;
+  } else {
+    e.verticales[mov.fil][mov.col] = true;
+  }
+
+  // Buscar cajas completadas tras aplicar la arista
+  const completadas = comprobarCajasEnEstado(e);
+
+  if (completadas.length > 0) {
+    // Asignar cada caja completada al propietario correcto
+    const dueño = byIA ? 'jugador2' : 'jugador1';
+    for (const caja of completadas) {
+      e.cajas[caja.f][caja.c] = dueño;
+    }
+
+    // Actualizar puntuación según quién hizo el movimiento
+    if (byIA) {
+      e.puntuacionJugador2 += completadas.length;
+    } else {
+      e.puntuacionJugador1 += completadas.length;
+    }
+
+    // Si se completaron cajas, el turno se mantiene (no togglear)
+  } else {
+    // Si no se completó ninguna caja, alterna el turno
+    e.turnoJugador1 = !e.turnoJugador1;
+  }
+
+  return completadas.length;
+}
+
+// Genera la lista de movimientos posibles desde un estado dado.
+// Devuelve un array de objetos { tipo: 'h'|'v', fil, col }.
+function movimientosPosiblesDesdeEstado(e) {
+  const movs = [];
+
+  // Aristas horizontales libres: iterar filas de puntos (tamaño) y columnas (tamaño-1)
+  for (let fila = 0; fila < tamaño; fila++) {
+    for (let col = 0; col < tamaño - 1; col++) {
+      if (!e.horizontales[fila][col]) {
+        movs.push({ tipo: 'h', fil: fila, col: col });
+      }
+    }
+  }
+
+  // Aristas verticales libres: iterar filas (tamaño-1) y columnas de puntos (tamaño)
+  for (let fila = 0; fila < tamaño - 1; fila++) {
+    for (let col = 0; col < tamaño; col++) {
+      if (!e.verticales[fila][col]) {
+        movs.push({ tipo: 'v', fil: fila, col: col });
+      }
+    }
+  }
+
+  return movs;
+}
+
+// Heurística de evaluación del estado para la IA.
+// - Devuelve un número donde valores mayores benefician a la IA (jugador2).
+// - Valora la diferencia de puntos y penaliza/beneficia celdas con 3 lados (oportunidades).
+function evaluarEstado(e) {
+  // Base: diferencia de puntuación (IA - jugador humano)
+  let valor = e.puntuacionJugador2 - e.puntuacionJugador1;
+
+  // Contadores de celdas con 3 lados según a quien favorecen en el turno actual
+  let tresParaIA = 0;
+  let tresParaJugador = 0;
+
+  for (let fila = 0; fila < tamaño - 1; fila++) {
+    for (let col = 0; col < tamaño - 1; col++) {
+      // Si la caja ya está completada, la ignoramos
+      if (e.cajas[fila][col]) continue;
+
+      // Contar lados ya dibujados en esta caja
+      let lados = 0;
+      if (e.horizontales[fila][col]) lados++;
+      if (e.horizontales[fila + 1][col]) lados++;
+      if (e.verticales[fila][col]) lados++;
+      if (e.verticales[fila][col + 1]) lados++;
+
+      // Si la caja tiene 3 lados, es una oportunidad inmediata para quien mueva a continuación
+      if (lados === 3) {
+        // Si el siguiente turno es de la IA (turnoJugador1 === false), cuenta para la IA
+        if (e.turnoJugador1 === false) {
+          tresParaIA++;
+        } else {
+          tresParaJugador++;
+        }
+      }
+    }
+  }
+
+  // Ajuste heurístico: valor adicional por celdas "3 lados" (puedes ajustar el factor)
+  valor += 0.5 * (tresParaIA - tresParaJugador);
+
+  return valor;
+}
 
 function minimaxIterativoConTiempo(estadoInicial, tiempoMaxMs = TIEMPO_MAX_MS, profundidadLimite = PROFUNDIDAD_LIMITE) {
     const inicio = Date.now(); const deadline = inicio + tiempoMaxMs;
@@ -444,6 +565,4 @@ window._puntosYCajas = {
     reiniciar: () => inicializarTableroConTamaño(tamaño),
     estado: () => ({ horizontales, verticales, cajas, turnoJugador1, puntuacionJugador1, puntuacionJugador2 }),
     estadisticasIA: () => ({ nodosBuscadosUltima, tiempoUltimaBusquedaMs })
-
 };
-
