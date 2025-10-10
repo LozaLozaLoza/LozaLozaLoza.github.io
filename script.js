@@ -31,8 +31,8 @@ let ratonY = null;
 let mostrarPuntero = false;
 
 // IA params
-const TIEMPO_MAX_MS = 700;
-const PROFUNDIDAD_LIMITE = 12;
+const TIEMPO_MAX_MS = 1000;
+const PROFUNDIDAD_LIMITE = 15;
 let nodosBuscadosUltima = 0;
 let tiempoUltimaBusquedaMs = 0;
 
@@ -444,4 +444,5 @@ window._puntosYCajas = {
     reiniciar: () => inicializarTableroConTamaño(tamaño),
     estado: () => ({ horizontales, verticales, cajas, turnoJugador1, puntuacionJugador1, puntuacionJugador2 }),
     estadisticasIA: () => ({ nodosBuscadosUltima, tiempoUltimaBusquedaMs })
+
 };
