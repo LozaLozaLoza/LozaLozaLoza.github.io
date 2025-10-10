@@ -31,8 +31,8 @@ let ratonY = null;
 let mostrarPuntero = false;
 
 // IA params
-const TIEMPO_MAX_MS = 1000;
-const PROFUNDIDAD_LIMITE = 15;
+const TIEMPO_MAX_MS = 2000;
+const PROFUNDIDAD_LIMITE = 30;
 let nodosBuscadosUltima = 0;
 let tiempoUltimaBusquedaMs = 0;
 
@@ -446,3 +446,4 @@ window._puntosYCajas = {
     estadisticasIA: () => ({ nodosBuscadosUltima, tiempoUltimaBusquedaMs })
 
 };
+
