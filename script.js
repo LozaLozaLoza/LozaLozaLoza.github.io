@@ -95,15 +95,30 @@ function manejarFinalToque(evt) {
         respondido = false;
         return;
     }
+    if (estadoJuego == 3) {
+        estadoJuego = 2;
+        pensar();
+        respondido = false;
+        return;
+    }
+    if (estadoJuego == 4) {
+        estadoJuego = 1;
+        pensar();
+        respondido = false;
+        return;
+    }
     if (respondido == true) {
-        if (estadoJuego == 2) {
-            estadoJuego = 1;
+        if (respuesta == respuestaCorrecta) {
+            puntuacion++;
+        }
+        if (estadoJuego == 1) {
+            estadoJuego = 3;
             pensar();
             respondido = false;
             return;
         }
-        if (estadoJuego == 1) {
-            estadoJuego = 2;
+        if (estadoJuego == 2) {
+            estadoJuego = 4;
             pensar();
             respondido = false;
             return;
@@ -114,6 +129,8 @@ function manejarFinalToque(evt) {
 //  Maneja el movimiento del dedo sobre la pantalla
 function manejarMovimientoToque(evt) {
     if (estadoJuego == 0) return;
+    if (estadoJuego == 3) return;
+    if (estadoJuego == 4) return;
     var xFinal = obtenerPosicionEnCanvas(evt).x;
 
 
@@ -945,11 +962,6 @@ function pensar() {
             contexto.fillText(texto1[i], anchoCss / 2, altoCss / 2 - fontSize * 0.6 * texto1.length + fontSize * 1.2 * i);
         }
     }
-    if (estadoJuego !== 0) {
-        if (respuesta == respuestaCorrecta) {
-            puntuacion++;
-        }
-    }
     if (estadoJuego == 1) {
         numPre = Math.floor(Math.random() * preguntas.length);
         var pregunta = preguntas[numPre];
@@ -1002,6 +1014,61 @@ function pensar() {
             contexto.fillText(texto2[i], anchoCss / 2, altoCss * 0.6 + fontSize * 1.2 * i);
         }
     }
+    if (estadoJuego == 3) {
+        if (respuestaCorrecta == respuesta) {
+
+            const anchoCss = window.innerWidth;
+            const altoCss = window.innerHeight;
+
+            contexto.fillStyle = '#C2729D'; // Color de fondo 
+            contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
+
+            contexto.fillStyle = '#000000'; // Color de texto
+            var fontSize = ajustarFuente("CORRECTO", anchoCss, altoCss * 0.3);
+            contexto.fontSize = fontSize;
+            contexto.textAlign = "center";
+            contexto.textBaseline = "top";
+
+            const texto = dividirTexto("CORRECTO", anchoCss);
+            for (var i = 0; i < texto.length; i++) {
+                contexto.fillText(texto[i], anchoCss / 2, altoCss * 0 + fontSize * 1.2 * i);
+            }
+
+
+            var fontSize = ajustarFuente(preguntas[numPre].A.explicacion, anchoCss, altoCss * 0.7);
+            const texto2 = dividirTexto(preguntas[numPre].A.explicacion, anchoCss);
+            for (var i = 0; i < texto2.length; i++) {
+                contexto.fillText(texto2[i], anchoCss / 2, altoCss * 0.3 + fontSize * 1.2 * i);
+            }
+
+        } else {
+
+            const anchoCss = window.innerWidth;
+            const altoCss = window.innerHeight;
+
+            contexto.fillStyle = '#C2729D'; // Color de fondo 
+            contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
+
+            contexto.fillStyle = '#000000'; // Color de texto
+            var fontSize = ajustarFuente("INCORRECTO", anchoCss, altoCss * 0.3);
+            contexto.fontSize = fontSize;
+            contexto.textAlign = "center";
+            contexto.textBaseline = "top";
+
+            const texto = dividirTexto("INCORRECTO", anchoCss);
+            for (var i = 0; i < texto.length; i++) {
+                contexto.fillText(texto[i], anchoCss / 2, altoCss * 0 + fontSize * 1.2 * i);
+            }
+
+
+            var fontSize = ajustarFuente(preguntas[numPre].A.explicacion, anchoCss, altoCss * 0.7);
+            const texto2 = dividirTexto(preguntas[numPre].A.explicacion, anchoCss);
+            for (var i = 0; i < texto2.length; i++) {
+                contexto.fillText(texto2[i], anchoCss / 2, altoCss * 0.3 + fontSize * 1.2 * i);
+            }
+
+        }
+    }
     if (estadoJuego == 2) {
         var pregunta = preguntas[numPre];
         respuestaCorrecta = pregunta.A.respuesta;
@@ -1051,6 +1118,61 @@ function pensar() {
         const texto2 = dividirTexto(pregunta.B.enunciado, anchoCss * 0.9);
         for (var i = 0; i < texto2.length; i++) {
             contexto.fillText(texto2[i], anchoCss / 2, altoCss * 0.6 + fontSize * 1.2 * i);
+        }
+    }
+    if (estadoJuego == 4) {
+        if (respuestaCorrecta == respuesta) {
+
+            const anchoCss = window.innerWidth;
+            const altoCss = window.innerHeight;
+
+            contexto.fillStyle = '#C2729D'; // Color de fondo 
+            contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
+
+            contexto.fillStyle = '#000000'; // Color de texto
+            var fontSize = ajustarFuente("CORRECTO", anchoCss, altoCss * 0.3);
+            contexto.fontSize = fontSize;
+            contexto.textAlign = "center";
+            contexto.textBaseline = "top";
+
+            const texto = dividirTexto("CORRECTO", anchoCss);
+            for (var i = 0; i < texto.length; i++) {
+                contexto.fillText(texto[i], anchoCss / 2, altoCss * 0 + fontSize * 1.2 * i);
+            }
+
+
+            var fontSize = ajustarFuente(preguntas[numPre].B.explicacion, anchoCss, altoCss * 0.7);
+            const texto2 = dividirTexto(preguntas[numPre].B.explicacion, anchoCss);
+            for (var i = 0; i < texto2.length; i++) {
+                contexto.fillText(texto2[i], anchoCss / 2, altoCss * 0.3 + fontSize * 1.2 * i);
+            }
+
+        } else {
+
+            const anchoCss = window.innerWidth;
+            const altoCss = window.innerHeight;
+
+            contexto.fillStyle = '#C2729D'; // Color de fondo 
+            contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
+
+            contexto.fillStyle = '#000000'; // Color de texto
+            var fontSize = ajustarFuente("INCORRECTO", anchoCss, altoCss * 0.3);
+            contexto.fontSize = fontSize;
+            contexto.textAlign = "center";
+            contexto.textBaseline = "top";
+
+            const texto = dividirTexto("INCORRECTO", anchoCss);
+            for (var i = 0; i < texto.length; i++) {
+                contexto.fillText(texto[i], anchoCss / 2, altoCss * 0 + fontSize * 1.2 * i);
+            }
+
+
+            var fontSize = ajustarFuente(preguntas[numPre].B.explicacion, anchoCss, altoCss * 0.7);
+            const texto2 = dividirTexto(preguntas[numPre].B.explicacion, anchoCss);
+            for (var i = 0; i < texto2.length; i++) {
+                contexto.fillText(texto2[i], anchoCss / 2, altoCss * 0.3 + fontSize * 1.2 * i);
+            }
+
         }
     }
 }
