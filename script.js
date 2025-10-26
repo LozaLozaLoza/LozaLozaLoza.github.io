@@ -72,14 +72,11 @@ canvasJuego.addEventListener('mousedown', manejarMouseDown);
 
 function manejarInicioToque(evt) {
     xInicio = obtenerPosicionEnCanvas(evt).x;
-    console.log(xInicio / window.innerWidth);
 }
 
 //  Maneja el final de un toque en pantalla
 function manejarFinalToque(evt) {
     var xFinal = obtenerPosicionEnCanvas(evt).x;
-    console.log(xFinal / window.innerWidth);
-    console.log((xFinal - xInicio) / window.innerWidth);
     if ((xFinal - xInicio) / window.innerWidth > 0.1) {
         respuesta = false;
         respondido = true;
@@ -108,6 +105,10 @@ function manejarFinalToque(evt) {
         return;
     }
     if (respondido == true) {
+
+        numPregRespon++;
+        console.log(numPregRespon);
+
         if (respuesta == respuestaCorrecta) {
             puntuacion++;
         }
@@ -134,7 +135,7 @@ function manejarMovimientoToque(evt) {
     var xFinal = obtenerPosicionEnCanvas(evt).x;
 
 
-    contexto.fillStyle = "#C2729D";
+    contexto.fillStyle = "#3E7C87";
 
     if ((xFinal - xInicio) / window.innerWidth > 0.1) {
         contexto.fillStyle = "#ff0000";
@@ -938,7 +939,6 @@ var puntuacion = 0;
 var numPre;
 
 function pensar() {
-    numPregRespon++;
     if (numPregRespon == 20) {
         const anchoCss = window.innerWidth;
         const altoCss = window.innerHeight;
@@ -972,7 +972,7 @@ function pensar() {
         const anchoCss = window.innerWidth;
         const altoCss = window.innerHeight;
 
-        contexto.fillStyle = '#C2729D'; // Color de fondo 
+        contexto.fillStyle = '#3E7C87'; // Color de fondo
         contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
 
         contexto.fillStyle = '#000000'; // Color de texto
@@ -1020,7 +1020,7 @@ function pensar() {
             const anchoCss = window.innerWidth;
             const altoCss = window.innerHeight;
 
-            contexto.fillStyle = '#C2729D'; // Color de fondo 
+            contexto.fillStyle = '#1FCC1F'; // Color de fondo
             contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
 
             contexto.fillStyle = '#000000'; // Color de texto
@@ -1046,7 +1046,7 @@ function pensar() {
             const anchoCss = window.innerWidth;
             const altoCss = window.innerHeight;
 
-            contexto.fillStyle = '#C2729D'; // Color de fondo 
+            contexto.fillStyle = '#D1580A'; // Color de fondo
             contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
 
             contexto.fillStyle = '#000000'; // Color de texto
@@ -1078,7 +1078,7 @@ function pensar() {
         const anchoCss = window.innerWidth;
         const altoCss = window.innerHeight;
 
-        contexto.fillStyle = '#C2729D'; // Color de fondo 
+        contexto.fillStyle = '#3E7C87'; // Color de fondo
         contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
 
         contexto.fillStyle = '#000000'; // Color de texto
@@ -1126,7 +1126,7 @@ function pensar() {
             const anchoCss = window.innerWidth;
             const altoCss = window.innerHeight;
 
-            contexto.fillStyle = '#C2729D'; // Color de fondo 
+            contexto.fillStyle = '#1FCC1F'; // Color de fondo
             contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
 
             contexto.fillStyle = '#000000'; // Color de texto
@@ -1152,7 +1152,7 @@ function pensar() {
             const anchoCss = window.innerWidth;
             const altoCss = window.innerHeight;
 
-            contexto.fillStyle = '#C2729D'; // Color de fondo 
+            contexto.fillStyle = '#D1580A'; // Color de fondo
             contexto.fillRect(0, 0, anchoCss, altoCss); // Rellena todo el canvas
 
             contexto.fillStyle = '#000000'; // Color de texto
