@@ -1071,7 +1071,7 @@ function pensar() {
     }
     if (estadoJuego == 2) {
         var pregunta = preguntas[numPre];
-        respuestaCorrecta = pregunta.A.respuesta;
+        respuestaCorrecta = pregunta.B.respuesta;
 
         // dibujar
 
@@ -1175,4 +1175,5 @@ function pensar() {
 
         }
     }
+
 }
