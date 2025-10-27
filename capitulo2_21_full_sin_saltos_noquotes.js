@@ -699,4 +699,4 @@ export const preguntas = [
       explicacion: "El factor de inclinación tiene en cuenta la inclinación de las ranuras respecto a la genera-triz de la superficie cilíndrica sobre la que se sitúan. 2.2. Preguntas teóricas propuestas En las siguientes 100 preguntas teóricas, indicar en cada caso si el enunciado es verdadero o falso."
     }
   }
-]
+];
