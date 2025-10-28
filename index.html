@@ -1,14 +1,53 @@
-
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>M.E.</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <title>Generador de preguntas</title>
 </head>
 <body>
-    <canvas id="can"></canvas>
-    <script src="script.js" type="module"></script>
+    <h1>Generador de preguntas tipo módulo</h1>
+    <button onclick="generarPreguntas()">Iniciar creación</button>
+    <pre id="output" style="white-space: pre-wrap; background: #f4f4f4; padding: 1em; border-radius: 8px;"></pre>
+
+    <script>
+        function generarPreguntas() {
+            const preguntas = [];
+            let inicio = parseInt(prompt("¿Desde qué número quieres comenzar?"), 10);
+            if (isNaN(inicio)) {
+                alert("Número inválido.");
+                return;
+            }
+
+            for (let i = 0; i < 10; i++) {
+                const numero = inicio + i;
+                const tema = prompt(`Tema de la pregunta ${numero}:`);
+                const A_enunciado = prompt("Enunciado A:");
+                const A_respuesta = prompt("¿A es verdadera o falsa? (v/f):").toLowerCase() === "v";
+                const A_explicacion = prompt("Explicación A:");
+                const B_enunciado = prompt("Enunciado B:");
+                const B_respuesta = prompt("¿B es verdadera o falsa? (v/f):").toLowerCase() === "v";
+                const B_explicacion = prompt("Explicación B:");
+
+                preguntas.push({
+                    numero,
+                    tema,
+                    A: {
+                        enunciado: A_enunciado,
+                        respuesta: A_respuesta,
+                        explicacion: A_explicacion
+                    },
+                    B: {
+                        enunciado: B_enunciado,
+                        respuesta: B_respuesta,
+                        explicacion: B_explicacion
+                    }
+                });
+            }
+
+            const resultado = "export const preguntas = " + JSON.stringify(preguntas, null, 2) + ";";
+            document.getElementById("output").textContent = resultado;
+            alert("¡Listo! Se generaron 10 preguntas. Copia el texto del recuadro.");
+        }
+    </script>
 </body>
 </html>
