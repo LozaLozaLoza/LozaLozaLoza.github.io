@@ -1,4 +1,4 @@
-export const preguntas = [
+export const preguntas2 = [
     {
         numero: 1,
         tema: "En las centrales eléctricas",
