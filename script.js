@@ -159,7 +159,7 @@ import { preguntas5 } from './capitulo5.js';
 
 const preguntas = preguntas2;
 
-for (var i = 0; i < preguntas5.length) {
+for (var i = 0; i < preguntas5.length; i++) {
     preguntas.push(preguntas5[i]);
 }
 
@@ -481,4 +481,5 @@ function pensar() {
 
         }
     }
+
 }
