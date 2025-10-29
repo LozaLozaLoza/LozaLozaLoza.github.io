@@ -154,7 +154,14 @@ function manejarMouseDown(evt) {
 
 var estadoJuego = 0; // estado del juego, 0 = pantalla de inicio.
 
-import { preguntas } from './capitulo2_21_full_sin_saltos_noquotes.js';
+import { preguntas2 } from './capitulo2.js';
+import { preguntas5 } from './capitulo5.js';
+
+const preguntas = preguntas2;
+
+for (var i = 0; i < preguntas5.length) {
+    preguntas.push(preguntas5[i]);
+}
 
 // para escribir en pantalla con la letra adecuada
 function ajustarFuente(texto, anchoMax, altoMax) {  
