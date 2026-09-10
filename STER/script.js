@@ -168,7 +168,7 @@ async function ejecutarIA() {
     const jugadorIA = turnoX ? 'X' : 'O';
 
     // Profundidad dinamica para mantener el navegador fluido
-    const profundidad = activeMacro === -1 ? 5 : 6;
+    const profundidad = activeMacro === -1 ? 6 : 7;
 
     let mejorMov = null;
     let mejorValor = turnoX ? -Infinity : Infinity;
