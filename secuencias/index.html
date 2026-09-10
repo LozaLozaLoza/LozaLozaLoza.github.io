@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0a84ff">
+    <title>Juego de Secuencias</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="brand">
+                <h1>Juego de Secuencias</h1>
+                <div class="subtitle">Evita repetir patrones</div>
+            </div>
+
+            <div class="controls">
+                <select id="modoSelect" aria-label="Seleccionar modo">
+                    <option value="pvp">Persona vs Persona</option>
+                    <option value="pvia" selected>Persona vs IA</option>
+                </select>
+
+                <select id="startSelect" aria-label="Quién empieza">
+                    <option value="humano">Empieza: Humano (P1)</option>
+                    <option value="ia">Empieza: IA (P1)</option>
+                </select>
+
+                <button id="resetBtn" aria-label="Reiniciar partida">Reiniciar</button>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="canvasWrap" style="flex-direction: column;">
+                <div id="sequenceBoard" aria-label="Tablero de Secuencia">
+                    <!-- Las letras se inyectarán aquí -->
+                </div>
+
+                <div class="action-buttons">
+                    <button id="btnX" class="btn-play x-btn">Añadir X</button>
+                    <button id="btnO" class="btn-play o-btn">Añadir O</button>
+                </div>
+            </div>
+
+            <aside class="info" aria-live="polite">
+                <div class="scoreRow">
+                    <div class="scoreBlock">
+                        <div class="label" id="player1Label">Jugador 1 (5 letras x2)</div>
+                        <div id="puntuacion1" class="value">0 Victorias</div>
+                    </div>
+
+                    <div class="scoreBlock">
+                        <div class="label" id="player2Label">Jugador 2 (3 letras x3)</div>
+                        <div id="puntuacion2" class="value">0 Victorias</div>
+                    </div>
+                </div>
+
+                <div class="stat">
+                    <div class="label">Turno</div>
+                    <div id="turnoDisplay" class="value">Jugador 1</div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
