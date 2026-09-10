@@ -102,11 +102,11 @@ button {
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     display: flex;
-    align-items: center;
     justify-content: flex-start;
     padding: 16px;
     gap: 8px;
-    overflow-x: auto;
+    flex-wrap: wrap;
+    align-content: flex-start;
 }
 
 .tile {
