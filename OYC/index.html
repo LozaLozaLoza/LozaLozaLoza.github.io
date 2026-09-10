@@ -1,1 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0a84ff">
+    <title>Orden y Caos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="brand">
+                <h1>Orden y Caos</h1>
+                <div class="subtitle">Alinea 5 o bloquea el tablero</div>
+            </div>
 
+            <div class="controls">
+                <select id="modoSelect" aria-label="Seleccionar modo">
+                    <option value="pvp">Persona vs Persona</option>
+                    <option value="pvia" selected>Persona vs IA</option>
+                </select>
+
+                <select id="startSelect" aria-label="Quien empieza">
+                    <option value="humano">Empieza: Humano (Orden)</option>
+                    <option value="ia">Empieza: IA (Orden)</option>
+                </select>
+
+                <button id="resetBtn" aria-label="Reiniciar partida">Reiniciar</button>
+            </div>
+        </header>
+
+        <main class="main">
+            <!-- Selector de pieza a colocar -->
+            <div class="piece-controls">
+                <button id="btnSelX" class="piece-btn active">Colocar X</button>
+                <button id="btnSelO" class="piece-btn">Colocar O</button>
+            </div>
+
+            <div class="canvasWrap">
+                <div id="ocBoard" aria-label="Tablero 6x6">
+                    <!-- Las casillas se generan con JS -->
+                </div>
+            </div>
+
+            <aside class="info" aria-live="polite">
+                <div class="scoreRow">
+                    <div class="scoreBlock">
+                        <div class="label" id="player1Label">Orden (Busca 5)</div>
+                        <div id="puntuacionOrden" class="value">0</div>
+                    </div>
+
+                    <div class="scoreBlock">
+                        <div class="label" id="player2Label">Caos (Bloquea)</div>
+                        <div id="puntuacionCaos" class="value">0</div>
+                    </div>
+                </div>
+
+                <div class="stat">
+                    <div class="label">Estado de la partida</div>
+                    <div id="turnoDisplay" class="value" style="color: var(--accent);">Turno: Humano (Orden)</div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
