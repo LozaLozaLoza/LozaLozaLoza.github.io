@@ -79,6 +79,13 @@ button {
     box-shadow: var(--shadow);
 }
 
+    /* Estilo para el boton deshacer deshabilitado */
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
 .main {
     display: flex;
     flex-direction: column;
@@ -98,7 +105,7 @@ button {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
-    background: #cbd5e1; /* Color de las lineas gordas */
+    background: #cbd5e1;
     padding: 6px;
     border-radius: var(--radius);
     width: calc(100vw - 32px);
@@ -111,8 +118,9 @@ button {
 .macro-board {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr); /* Evita colapso vertical */
     gap: 2px;
-    background: #cbd5e1; /* Lineas finas */
+    background: #cbd5e1;
     position: relative;
     border-radius: 4px;
     overflow: hidden;
@@ -134,6 +142,7 @@ button {
     font-size: 28px;
     font-weight: 800;
     cursor: pointer;
+    aspect-ratio: 1 / 1; /* Cuadrados inmutables */
 }
 
     .micro-cell.X {

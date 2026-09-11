@@ -3,6 +3,7 @@ const superBoard = document.getElementById('superBoard');
 const modoSelect = document.getElementById('modoSelect');
 const startSelect = document.getElementById('startSelect');
 const resetBtn = document.getElementById('resetBtn');
+const undoBtn = document.getElementById('undoBtn'); // Nuevo DOM
 const player1Label = document.getElementById('player1Label');
 const player2Label = document.getElementById('player2Label');
 const turnoDisplay = document.getElementById('turnoDisplay');
@@ -12,16 +13,17 @@ const punt2Elem = document.getElementById('puntuacion2');
 // Estado
 let microBoards = Array(9).fill(null).map(() => Array(9).fill(null));
 let macroBoard = Array(9).fill(null);
-let activeMacro = -1; // -1 significa jugada libre en cualquier tablero disponible
+let activeMacro = -1;
 let turnoX = true;
 let victoriasX = 0;
 let victoriasO = 0;
 let procesandoIA = false;
+let historial = []; // Pila (Stack) para el historial de movimientos
 
 const winLines = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8], // Filas
-    [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columnas
-    [0, 4, 8], [2, 4, 6]           // Diagonales
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
 ];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -32,6 +34,10 @@ function inicializarTablero() {
     activeMacro = -1;
     turnoX = true;
     procesandoIA = false;
+
+    // Limpieza de historial
+    historial = [];
+    undoBtn.disabled = true;
 
     const existing = document.getElementById('endOverlay');
     if (existing) existing.remove();
@@ -44,19 +50,64 @@ function inicializarTablero() {
     }
 }
 
+// ------------------------------------------
+// LÓGICA DE HISTORIAL (DESHACER)
+// ------------------------------------------
+function guardarEstado() {
+    // Se guarda una instantanea mediante clonación profunda
+    historial.push({
+        micro: JSON.parse(JSON.stringify(microBoards)),
+        macro: JSON.parse(JSON.stringify(macroBoard)),
+        active: activeMacro,
+        turno: turnoX,
+        vX: victoriasX,
+        vO: victoriasO
+    });
+    undoBtn.disabled = false;
+}
+
+function deshacerJugada() {
+    if (procesandoIA) return;
+    if (historial.length === 0) return;
+
+    const esPvIA = modoSelect.value === 'pvia';
+    // Si la máquina juega, el humano necesita deshacer su jugada y la respuesta de la IA.
+    const pasosADeshacer = (esPvIA && historial.length >= 2) ? 2 : 1;
+
+    let estadoAnterior;
+    for (let j = 0; j < pasosADeshacer; j++) {
+        estadoAnterior = historial.pop();
+    }
+
+    if (estadoAnterior) {
+        microBoards = estadoAnterior.micro;
+        macroBoard = estadoAnterior.macro;
+        activeMacro = estadoAnterior.active;
+        turnoX = estadoAnterior.turno;
+        victoriasX = estadoAnterior.vX;
+        victoriasO = estadoAnterior.vO;
+
+        const existing = document.getElementById('endOverlay');
+        if (existing) existing.remove();
+
+        if (historial.length === 0) undoBtn.disabled = true;
+
+        dibujarTablero();
+        actualizarUI();
+    }
+}
+
 function dibujarTablero() {
     superBoard.innerHTML = '';
     for (let m = 0; m < 9; m++) {
         const macroDiv = document.createElement('div');
         macroDiv.className = 'macro-board';
 
-        // Estado del mini tablero (Victoria o Empate)
         if (macroBoard[m] !== null) {
             macroDiv.classList.add('won');
             macroDiv.setAttribute('data-winner', macroBoard[m]);
         }
 
-        // Resaltar el tablero donde se debe jugar
         if (activeMacro === m || (activeMacro === -1 && macroBoard[m] === null)) {
             if (macroBoard[m] === null && !procesandoIA) {
                 macroDiv.classList.add('active');
@@ -109,9 +160,11 @@ function chequearEmpate(board) {
 
 async function manejarJugada(m, i) {
     if (procesandoIA) return;
-    if (macroBoard[m] !== null) return; // Tablero ya ganado/empatado
-    if (activeMacro !== -1 && activeMacro !== m) return; // Movimiento ilegal
-    if (microBoards[m][i] !== null) return; // Casilla ocupada
+    if (macroBoard[m] !== null) return;
+    if (activeMacro !== -1 && activeMacro !== m) return;
+    if (microBoards[m][i] !== null) return;
+
+    guardarEstado(); // Guardamos el tablero antes de la mutación
 
     aplicarMovimiento(microBoards, macroBoard, m, i, turnoX ? 'X' : 'O');
 
@@ -135,7 +188,7 @@ async function manejarJugada(m, i) {
     if (tocaIA) {
         ejecutarIA();
     } else {
-        dibujarTablero(); // Refresca los bordes activos
+        dibujarTablero();
     }
 }
 
@@ -146,10 +199,9 @@ function aplicarMovimiento(micro, macro, m, i, jugador) {
     if (ganadorMicro) {
         macro[m] = ganadorMicro;
     } else if (chequearEmpate(micro[m])) {
-        macro[m] = '-'; // Empate, casilla bloqueada
+        macro[m] = '-';
     }
 
-    // El siguiente tablero activo es la casilla donde se jugo
     activeMacro = macro[i] === null ? i : -1;
 }
 
@@ -159,15 +211,13 @@ function aplicarMovimiento(micro, macro, m, i, jugador) {
 
 async function ejecutarIA() {
     procesandoIA = true;
-    dibujarTablero(); // Quitar resaltados mientras piensa
-    await sleep(50); // Dar respiro a la UI
+    dibujarTablero();
+    await sleep(50);
 
-    // Clonacion profunda del estado para no afectar la UI
     const macroClon = JSON.parse(JSON.stringify(macroBoard));
     const microClon = JSON.parse(JSON.stringify(microBoards));
     const jugadorIA = turnoX ? 'X' : 'O';
 
-    // Profundidad dinamica para mantener el navegador fluido
     const profundidad = activeMacro === -1 ? 6 : 7;
 
     let mejorMov = null;
@@ -188,9 +238,9 @@ async function ejecutarIA() {
 
         let valor = minimax(tMacro, tMicro, proxActivo, profundidad - 1, -Infinity, Infinity, !turnoX);
 
-        if (turnoX) { // Maximizar
+        if (turnoX) {
             if (valor > mejorValor) { mejorValor = valor; mejorMov = mov; }
-        } else { // Minimizar
+        } else {
             if (valor < mejorValor) { mejorValor = valor; mejorMov = mov; }
         }
     }
@@ -268,7 +318,7 @@ function evaluarTablero(macro, micro) {
     for (let m = 0; m < 9; m++) {
         if (macro[m] === null) {
             score += evaluarLineas(micro[m]);
-            if (micro[m][4] === 'X') score += 5; // Control del centro
+            if (micro[m][4] === 'X') score += 5;
             if (micro[m][4] === 'O') score -= 5;
         }
     }
@@ -314,6 +364,8 @@ function terminarPartida(ganador) {
 
 // Eventos
 resetBtn.addEventListener('click', inicializarTablero);
+undoBtn.addEventListener('click', deshacerJugada); // Botón de deshacer vinculado
+
 modoSelect.addEventListener('change', () => {
     startSelect.style.display = modoSelect.value === 'pvp' ? 'none' : 'inline-block';
     inicializarTablero();
