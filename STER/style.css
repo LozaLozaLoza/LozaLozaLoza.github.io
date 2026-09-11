@@ -79,7 +79,6 @@ button {
     box-shadow: var(--shadow);
 }
 
-    /* Estilo para el boton deshacer deshabilitado */
     button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
@@ -118,7 +117,7 @@ button {
 .macro-board {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr); /* Evita colapso vertical */
+    grid-template-rows: repeat(3, 1fr);
     gap: 2px;
     background: #cbd5e1;
     position: relative;
@@ -142,7 +141,7 @@ button {
     font-size: 28px;
     font-weight: 800;
     cursor: pointer;
-    aspect-ratio: 1 / 1; /* Cuadrados inmutables */
+    aspect-ratio: 1 / 1;
 }
 
     .micro-cell.X {

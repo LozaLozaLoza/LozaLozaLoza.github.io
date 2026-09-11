@@ -26,7 +26,12 @@
                     <option value="ia">Empieza: IA (X)</option>
                 </select>
 
-                <!-- Botón de deshacer añadido aquí -->
+                <select id="botLevelSelect" aria-label="Nivel de la IA 1">
+                    <option value="facil">IA: Fácil</option>
+                    <option value="medio" selected>IA: Medio</option>
+                    <option value="dificil">IA: Difícil</option>
+                </select>
+
                 <button id="undoBtn" aria-label="Deshacer jugada" disabled>Deshacer</button>
                 <button id="resetBtn" aria-label="Reiniciar partida">Reiniciar</button>
             </div>
@@ -46,7 +51,12 @@
                         <div id="puntuacion1" class="value">0</div>
                     </div>
 
-                    <div class="scoreBlock">
+                    <div class="scoreBlock" style="align-items: center;">
+                        <div class="label">Tablas</div>
+                        <div id="puntuacionTablas" class="value">0</div>
+                    </div>
+
+                    <div class="scoreBlock" style="align-items: flex-end;">
                         <div class="label" id="player2Label">Jugador 2 (O)</div>
                         <div id="puntuacion2" class="value">0</div>
                     </div>

@@ -2,13 +2,15 @@
 const superBoard = document.getElementById('superBoard');
 const modoSelect = document.getElementById('modoSelect');
 const startSelect = document.getElementById('startSelect');
+const botLevelSelect = document.getElementById('botLevelSelect');
 const resetBtn = document.getElementById('resetBtn');
-const undoBtn = document.getElementById('undoBtn'); // Nuevo DOM
+const undoBtn = document.getElementById('undoBtn');
 const player1Label = document.getElementById('player1Label');
 const player2Label = document.getElementById('player2Label');
 const turnoDisplay = document.getElementById('turnoDisplay');
 const punt1Elem = document.getElementById('puntuacion1');
 const punt2Elem = document.getElementById('puntuacion2');
+const puntTablasElem = document.getElementById('puntuacionTablas');
 
 // Estado
 let microBoards = Array(9).fill(null).map(() => Array(9).fill(null));
@@ -17,8 +19,10 @@ let activeMacro = -1;
 let turnoX = true;
 let victoriasX = 0;
 let victoriasO = 0;
+let tablas = 0;
 let procesandoIA = false;
-let historial = []; // Pila (Stack) para el historial de movimientos
+let historial = [];
+let idPartida = 0;
 
 const winLines = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -29,13 +33,13 @@ const winLines = [
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function inicializarTablero() {
+    idPartida++;
     microBoards = Array(9).fill(null).map(() => Array(9).fill(null));
     macroBoard = Array(9).fill(null);
     activeMacro = -1;
     turnoX = true;
     procesandoIA = false;
 
-    // Limpieza de historial
     historial = [];
     undoBtn.disabled = true;
 
@@ -45,23 +49,21 @@ function inicializarTablero() {
     dibujarTablero();
     actualizarUI();
 
-    if (modoSelect.value === 'pvia' && startSelect.value === 'ia') {
+    const modo = modoSelect.value;
+    if (modo === 'pvia' && startSelect.value === 'ia') {
         ejecutarIA();
     }
 }
 
-// ------------------------------------------
-// LÓGICA DE HISTORIAL (DESHACER)
-// ------------------------------------------
 function guardarEstado() {
-    // Se guarda una instantanea mediante clonación profunda
     historial.push({
         micro: JSON.parse(JSON.stringify(microBoards)),
         macro: JSON.parse(JSON.stringify(macroBoard)),
         active: activeMacro,
         turno: turnoX,
         vX: victoriasX,
-        vO: victoriasO
+        vO: victoriasO,
+        t: tablas
     });
     undoBtn.disabled = false;
 }
@@ -71,7 +73,6 @@ function deshacerJugada() {
     if (historial.length === 0) return;
 
     const esPvIA = modoSelect.value === 'pvia';
-    // Si la máquina juega, el humano necesita deshacer su jugada y la respuesta de la IA.
     const pasosADeshacer = (esPvIA && historial.length >= 2) ? 2 : 1;
 
     let estadoAnterior;
@@ -86,6 +87,7 @@ function deshacerJugada() {
         turnoX = estadoAnterior.turno;
         victoriasX = estadoAnterior.vX;
         victoriasO = estadoAnterior.vO;
+        tablas = estadoAnterior.t;
 
         const existing = document.getElementById('endOverlay');
         if (existing) existing.remove();
@@ -127,14 +129,20 @@ function dibujarTablero() {
 }
 
 function actualizarUI() {
-    const esPvIA = modoSelect.value === 'pvia';
+    const modo = modoSelect.value;
     const iaEmpieza = startSelect.value === 'ia';
 
-    player1Label.textContent = (esPvIA && iaEmpieza) ? 'IA (X)' : 'Jugador 1 (X)';
-    player2Label.textContent = (esPvIA && !iaEmpieza) ? 'IA (O)' : 'Jugador 2 (O)';
+    if (modo === 'pvp') {
+        player1Label.textContent = 'Jugador 1 (X)';
+        player2Label.textContent = 'Jugador 2 (O)';
+    } else if (modo === 'pvia') {
+        player1Label.textContent = iaEmpieza ? 'IA (X)' : 'Jugador 1 (X)';
+        player2Label.textContent = iaEmpieza ? 'Jugador 2 (O)' : 'IA (O)';
+    }
 
     punt1Elem.textContent = victoriasX;
     punt2Elem.textContent = victoriasO;
+    puntTablasElem.textContent = tablas;
 
     if (turnoX) {
         turnoDisplay.textContent = "Turno de las X";
@@ -158,16 +166,15 @@ function chequearEmpate(board) {
     return board.every(cell => cell !== null);
 }
 
-async function manejarJugada(m, i) {
+function manejarJugada(m, i) {
     if (procesandoIA) return;
     if (macroBoard[m] !== null) return;
     if (activeMacro !== -1 && activeMacro !== m) return;
     if (microBoards[m][i] !== null) return;
 
-    guardarEstado(); // Guardamos el tablero antes de la mutación
+    guardarEstado();
 
     aplicarMovimiento(microBoards, macroBoard, m, i, turnoX ? 'X' : 'O');
-
     dibujarTablero();
 
     let ganadorGlobal = chequearGanador(macroBoard);
@@ -182,8 +189,8 @@ async function manejarJugada(m, i) {
     turnoX = !turnoX;
     actualizarUI();
 
-    const esPvIA = modoSelect.value === 'pvia';
-    const tocaIA = esPvIA && ((startSelect.value === 'ia' && turnoX) || (startSelect.value === 'humano' && !turnoX));
+    const modo = modoSelect.value;
+    const tocaIA = (modo === 'pvia' && ((startSelect.value === 'ia' && turnoX) || (startSelect.value === 'humano' && !turnoX)));
 
     if (tocaIA) {
         ejecutarIA();
@@ -206,55 +213,129 @@ function aplicarMovimiento(micro, macro, m, i, jugador) {
 }
 
 // ==========================================
-// IA Y MINIMAX CON PODA ALFA-BETA
+// IA: MINIMAX ITERATIVO CON ORDENACIÓN Y HEURÍSTICA POSICIONAL
 // ==========================================
 
 async function ejecutarIA() {
+    const miPartida = idPartida;
     procesandoIA = true;
     dibujarTablero();
     await sleep(50);
+
+    if (miPartida !== idPartida) return;
 
     const macroClon = JSON.parse(JSON.stringify(macroBoard));
     const microClon = JSON.parse(JSON.stringify(microBoards));
     const jugadorIA = turnoX ? 'X' : 'O';
 
-    const profundidad = activeMacro === -1 ? 6 : 7;
+    let TIEMPO_MAXIMO_MS = 800;
+    let limiteProfundidad = 100;
 
-    let mejorMov = null;
-    let mejorValor = turnoX ? -Infinity : Infinity;
+    const nivel = botLevelSelect.value;
 
-    const movimientos = obtenerMovimientosPosibles(macroClon, microClon, activeMacro);
+    if (nivel === 'facil') {
+        TIEMPO_MAXIMO_MS = 100;
+        limiteProfundidad = 2;
+    } else if (nivel === 'medio') {
+        TIEMPO_MAXIMO_MS = 400;
+        limiteProfundidad = 4;
+    } else if (nivel === 'dificil') {
+        TIEMPO_MAXIMO_MS = 1500;
+        limiteProfundidad = 20;
+    }
 
-    for (let mov of movimientos) {
-        const tMacro = JSON.parse(JSON.stringify(macroClon));
-        const tMicro = JSON.parse(JSON.stringify(microClon));
+    const tiempoInicio = Date.now();
+    let mejorMovGlobal = null;
+    let profundidad = 1;
 
-        tMicro[mov.m][mov.i] = jugadorIA;
-        let gMicro = chequearGanador(tMicro[mov.m]);
-        if (gMicro) tMacro[mov.m] = gMicro;
-        else if (chequearEmpate(tMicro[mov.m])) tMacro[mov.m] = '-';
+    let rootMoves = obtenerMovimientosPosibles(macroClon, microClon, activeMacro);
+    if (rootMoves.length === 0) {
+        procesandoIA = false;
+        return;
+    }
 
-        let proxActivo = tMacro[mov.i] === null ? mov.i : -1;
+    // Inicializamos el score basándonos en el peso estático para la Profundidad 1
+    const pesoCasilla = [2, 1, 2, 1, 3, 1, 2, 1, 2];
+    rootMoves.forEach(m => m.score = pesoCasilla[m.i]);
 
-        let valor = minimax(tMacro, tMicro, proxActivo, profundidad - 1, -Infinity, Infinity, !turnoX);
+    while (profundidad <= limiteProfundidad) {
+        let mejorMovNivel = null;
+        let mejorValor = turnoX ? -Infinity : Infinity;
+        let tiempoAgotado = false;
 
+        // Ordenación iterativa basada en el cálculo del ciclo anterior
         if (turnoX) {
-            if (valor > mejorValor) { mejorValor = valor; mejorMov = mov; }
+            rootMoves.sort((a, b) => b.score - a.score);
         } else {
-            if (valor < mejorValor) { mejorValor = valor; mejorMov = mov; }
+            rootMoves.sort((a, b) => a.score - b.score);
         }
+
+        for (let mov of rootMoves) {
+            if (Date.now() - tiempoInicio > TIEMPO_MAXIMO_MS) {
+                tiempoAgotado = true;
+                break;
+            }
+
+            const tMacro = JSON.parse(JSON.stringify(macroClon));
+            const tMicro = JSON.parse(JSON.stringify(microClon));
+
+            tMicro[mov.m][mov.i] = jugadorIA;
+            let gMicro = chequearGanador(tMicro[mov.m]);
+            if (gMicro) tMacro[mov.m] = gMicro;
+            else if (chequearEmpate(tMicro[mov.m])) tMacro[mov.m] = '-';
+
+            let proxActivo = tMacro[mov.i] === null ? mov.i : -1;
+
+            let valor = minimax(
+                tMacro, tMicro, proxActivo,
+                profundidad - 1, -Infinity, Infinity, !turnoX,
+                tiempoInicio, TIEMPO_MAXIMO_MS
+            );
+
+            if (valor === null) {
+                tiempoAgotado = true;
+                break;
+            }
+
+            // Actualizamos la memoria del movimiento con el cálculo real
+            mov.score = valor;
+
+            if (turnoX) {
+                if (valor > mejorValor) { mejorValor = valor; mejorMovNivel = mov; }
+            } else {
+                if (valor < mejorValor) { mejorValor = valor; mejorMovNivel = mov; }
+            }
+        }
+
+        if (tiempoAgotado) {
+            break;
+        } else {
+            mejorMovGlobal = mejorMovNivel;
+            if (Math.abs(mejorValor) > 9000) break;
+        }
+
+        profundidad++;
     }
 
     procesandoIA = false;
-    if (mejorMov) manejarJugada(mejorMov.m, mejorMov.i);
+    if (miPartida !== idPartida) return;
+
+    if (!mejorMovGlobal && rootMoves.length > 0) {
+        mejorMovGlobal = rootMoves[0];
+    }
+
+    manejarJugada(mejorMovGlobal.m, mejorMovGlobal.i);
 }
 
-function minimax(macro, micro, active, depth, alpha, beta, isMaximizing) {
+function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoInicio, tiempoMaximo) {
+    if (Date.now() - tiempoInicio > tiempoMaximo) return null;
+
     let ganador = chequearGanador(macro);
     if (ganador === 'X') return 10000 + depth;
     if (ganador === 'O') return -10000 - depth;
     if (chequearEmpate(macro)) return 0;
-    if (depth === 0) return evaluarTablero(macro, micro);
+
+    if (depth === 0) return evaluarTablero(macro, micro, active, isMaximizing);
 
     const movs = obtenerMovimientosPosibles(macro, micro, active);
     if (movs.length === 0) return 0;
@@ -263,7 +344,10 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing) {
         let maxEval = -Infinity;
         for (let mov of movs) {
             const { nMacro, nMicro, nActive } = simular(macro, micro, mov, 'X');
-            let ev = minimax(nMacro, nMicro, nActive, depth - 1, alpha, beta, false);
+            let ev = minimax(nMacro, nMicro, nActive, depth - 1, alpha, beta, false, tiempoInicio, tiempoMaximo);
+
+            if (ev === null) return null;
+
             maxEval = Math.max(maxEval, ev);
             alpha = Math.max(alpha, ev);
             if (beta <= alpha) break;
@@ -273,7 +357,10 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing) {
         let minEval = Infinity;
         for (let mov of movs) {
             const { nMacro, nMicro, nActive } = simular(macro, micro, mov, 'O');
-            let ev = minimax(nMacro, nMicro, nActive, depth - 1, alpha, beta, true);
+            let ev = minimax(nMacro, nMicro, nActive, depth - 1, alpha, beta, true, tiempoInicio, tiempoMaximo);
+
+            if (ev === null) return null;
+
             minEval = Math.min(minEval, ev);
             beta = Math.min(beta, ev);
             if (beta <= alpha) break;
@@ -310,10 +397,14 @@ function obtenerMovimientosPosibles(macro, micro, active) {
             }
         }
     }
+
+    const pesoCasilla = [2, 1, 2, 1, 3, 1, 2, 1, 2];
+    movs.sort((a, b) => pesoCasilla[b.i] - pesoCasilla[a.i]);
+
     return movs;
 }
 
-function evaluarTablero(macro, micro) {
+function evaluarTablero(macro, micro, active, isMaximizing) {
     let score = evaluarLineas(macro) * 100;
     for (let m = 0; m < 9; m++) {
         if (macro[m] === null) {
@@ -322,6 +413,15 @@ function evaluarTablero(macro, micro) {
             if (micro[m][4] === 'O') score -= 5;
         }
     }
+
+    if (active === -1) {
+        if (isMaximizing) {
+            score += 50;
+        } else {
+            score -= 50;
+        }
+    }
+
     return score;
 }
 
@@ -342,6 +442,8 @@ function evaluarLineas(board) {
 function terminarPartida(ganador) {
     if (ganador === 'X') victoriasX++;
     else if (ganador === 'O') victoriasO++;
+    else if (ganador === '-') tablas++;
+
     actualizarUI();
 
     const overlay = document.createElement('div');
@@ -350,7 +452,7 @@ function terminarPartida(ganador) {
     panel.className = 'endPanel';
 
     const titulo = document.createElement('h2');
-    titulo.textContent = ganador === '-' ? 'Empate Total!' : `Gano ${ganador}!`;
+    titulo.textContent = ganador === '-' ? '¡Tablas Totales!' : `¡Ganó ${ganador}!`;
 
     const btn = document.createElement('button');
     btn.textContent = 'Jugar de nuevo';
@@ -362,16 +464,33 @@ function terminarPartida(ganador) {
     document.body.appendChild(overlay);
 }
 
-// Eventos
+// ------------------------------------------
+// EVENTOS Y ARRANQUE
+// ------------------------------------------
+function actualizarControles() {
+    const modo = modoSelect.value;
+    if (modo === 'pvp') {
+        startSelect.style.display = 'none';
+        botLevelSelect.style.display = 'none';
+    } else if (modo === 'pvia') {
+        startSelect.style.display = 'inline-block';
+        botLevelSelect.style.display = 'inline-block';
+        botLevelSelect.options[0].text = "IA: Fácil";
+        botLevelSelect.options[1].text = "IA: Medio";
+        botLevelSelect.options[2].text = "IA: Difícil";
+    }
+}
+
 resetBtn.addEventListener('click', inicializarTablero);
-undoBtn.addEventListener('click', deshacerJugada); // Botón de deshacer vinculado
+undoBtn.addEventListener('click', deshacerJugada);
 
 modoSelect.addEventListener('change', () => {
-    startSelect.style.display = modoSelect.value === 'pvp' ? 'none' : 'inline-block';
+    actualizarControles();
     inicializarTablero();
 });
 startSelect.addEventListener('change', inicializarTablero);
+botLevelSelect.addEventListener('change', inicializarTablero);
 
 // Iniciar
-startSelect.style.display = modoSelect.value === 'pvp' ? 'none' : 'inline-block';
+actualizarControles();
 inicializarTablero();
