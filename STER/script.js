@@ -25,18 +25,19 @@ let historial = [];
 let idPartida = 0;
 
 // ==========================================
-// ZOBRIST HASHING Y TABLA DE TRANSPOSICI”N (64-bits)
+// ZOBRIST HASHING Y TABLA DE TRANSPOSICI√ìN (64-bits)
 // ==========================================
+
 const ZOBRIST_PIECE = Array(9).fill(null).map(() => Array(9).fill(null).map(() => Array(2).fill(0n)));
 const ZOBRIST_ACTIVE = Array(10).fill(0n); // 0-8 para macros, 9 para activeMacro = -1
 let ZOBRIST_TURN = 0n;
 
 let tablaTransposicion = new Map();
 const TT_EXACT = 0;
-const TT_ALPHA = 1; // LÌmite superior
-const TT_BETA = 2;  // LÌmite inferior
+const TT_ALPHA = 1; // L√≠mite superior
+const TT_BETA = 2;  // L√≠mite inferior
 
-// Generador de n˙meros aleatorios de 64 bits usando BigInt
+// Generador de n√∫meros aleatorios de 64 bits usando BigInt
 function random64() {
     const high = BigInt(Math.floor(Math.random() * 0x100000000));
     const low = BigInt(Math.floor(Math.random() * 0x100000000));
@@ -71,7 +72,7 @@ function calcularHashInicial(micro, active, isTurnoX) {
     return h;
 }
 
-// ConfiguraciÛn HeurÌstica Parametrizable (El "Instinto" de la IA optimizado)
+// Configuraci√≥n Heur√≠stica Parametrizable (El "Instinto" de la IA optimizado)
 let criterio = {
     vialibre: 43.00597740846656,
     macro_peso: 164.65294272749256,
@@ -301,7 +302,7 @@ function terminarPartida(ganador) {
     panel.className = 'endPanel';
 
     const titulo = document.createElement('h2');
-    titulo.textContent = ganador === '-' ? '°Tablas Totales!' : `°GanÛ ${ganador}!`;
+    titulo.textContent = ganador === '-' ? '¬°Tablas Totales!' : `¬°Gan√≥ ${ganador}!`;
 
     const btn = document.createElement('button');
     btn.textContent = 'Jugar de nuevo';
@@ -314,7 +315,7 @@ function terminarPartida(ganador) {
 }
 
 // ==========================================
-// IA: MOTOR ITERATIVO Y M…TODOS DE B⁄SQUEDA
+// IA: MOTOR ITERATIVO Y M√âTODOS DE B√öSQUEDA
 // ==========================================
 
 async function ejecutarIA() {
@@ -349,7 +350,7 @@ async function ejecutarIA() {
 
     rootMoves.forEach(m => m.score = criterio.pesoCasilla[m.i]);
 
-    // Calcular la firma inicial de la posiciÛn
+    // Calcular la firma inicial de la posici√≥n
     let initialHash = calcularHashInicial(microClon, activeMacro, turnoX);
     let activeIdxOld = (activeMacro === -1) ? 9 : activeMacro;
 
@@ -374,7 +375,7 @@ async function ejecutarIA() {
 
             let proxActivo = tMacro[mov.i] === null ? mov.i : -1;
 
-            // ActualizaciÛn incremental del hash (Zobrist r·pido)
+            // Actualizaci√≥n incremental del hash (Zobrist r√°pido)
             let nextHash = initialHash;
             nextHash ^= turnoX ? ZOBRIST_PIECE[mov.m][mov.i][0] : ZOBRIST_PIECE[mov.m][mov.i][1];
             nextHash ^= ZOBRIST_ACTIVE[activeIdxOld];
@@ -417,10 +418,10 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
     let originalAlpha = alpha;
     let ttMove = null;
 
-    // --- LECTURA DE LA TABLA DE TRANSPOSICI”N ---
+    // --- LECTURA DE LA TABLA DE TRANSPOSICI√ìN ---
     if (tablaTransposicion.has(currentHash)) {
         let ttEntry = tablaTransposicion.get(currentHash);
-        ttMove = ttEntry.bestMov; // Recuperamos el mejor movimiento histÛrico
+        ttMove = ttEntry.bestMov; // Recuperamos el mejor movimiento hist√≥rico
 
         if (ttEntry.depth >= depth) {
             if (ttEntry.flag === TT_EXACT) return ttEntry.value;
@@ -439,7 +440,7 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
     const movs = obtenerMovimientosPosibles(macro, micro, active);
     if (movs.length === 0) return 0;
 
-    // --- ORDENACI”N PV (Principal Variation / TT Move) ---
+    // --- ORDENACI√ìN PV (Principal Variation / TT Move) ---
     // Si la TT nos dio un movimiento, lo ponemos el primero de la lista
     if (ttMove) {
         const idx = movs.findIndex(m => m.m === ttMove.m && m.i === ttMove.i);
@@ -468,7 +469,7 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
 
             if (ev > bestVal) {
                 bestVal = ev;
-                bestLocalMov = mov; // Lo guardamos si superÛ al rÈcord anterior
+                bestLocalMov = mov; // Lo guardamos si super√≥ al r√©cord anterior
             }
             alpha = Math.max(alpha, ev);
             if (beta <= alpha) break;
@@ -495,12 +496,12 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
         }
     }
 
-    // --- ESCRITURA EN LA TABLA DE TRANSPOSICI”N ---
+    // --- ESCRITURA EN LA TABLA DE TRANSPOSICI√ìN ---
     let flag = TT_EXACT;
     if (bestVal <= originalAlpha) flag = TT_ALPHA;
     else if (bestVal >= beta) flag = TT_BETA;
 
-    // Guardamos tambiÈn el mejor movimiento encontrado para ayudar a futuras ramas
+    // Guardamos tambi√©n el mejor movimiento encontrado para ayudar a futuras ramas
     tablaTransposicion.set(currentHash, { value: bestVal, depth: depth, flag: flag, bestMov: bestLocalMov });
 
     return bestVal;
@@ -535,14 +536,14 @@ function obtenerMovimientosPosibles(macro, micro, active) {
         }
     }
 
-    // OrdenaciÛn interna utilizando los pesos optimizados genÈticamente
+    // Ordenaci√≥n interna utilizando los pesos optimizados gen√©ticamente
     movs.sort((a, b) => criterio.pesoCasilla[b.i] - criterio.pesoCasilla[a.i]);
 
     return movs;
 }
 
 // ==========================================
-// SISTEMA DE HEURÕSTICA PROBABILÕSTICA Y CONTEXTUAL
+// SISTEMA DE HEUR√çSTICA PROBABIL√çSTICA Y CONTEXTUAL
 // ==========================================
 
 function evaluarProbabilidadYBloqueos(board, pesoAmenazasX, pesoAmenazasO) {
@@ -584,7 +585,7 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
     let score = 0;
     let macroContinuo = [...macro];
 
-    // FASE 1: MAPA DE VALOR ESTRAT…GICO (TipificaciÛn de Amenazas)
+    // FASE 1: MAPA DE VALOR ESTRAT√âGICO (Tipificaci√≥n de Amenazas)
     let valorEstrategicoX = Array(9).fill(0);
     let valorEstrategicoO = Array(9).fill(0);
 
@@ -614,7 +615,7 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
 
     let asfixia = 0;
 
-    // FASE 2: EVALUACI”N LOCAL Y APLICACI”N DE BLOQUEOS
+    // FASE 2: EVALUACI√ìN LOCAL Y APLICACI√ìN DE BLOQUEOS
     for (let m = 0; m < 9; m++) {
         if (macro[m] === null) {
             let { probTotal, amenazaX, amenazaO } = evaluarProbabilidadYBloqueos(micro[m], criterio.micro_amenaza_X, criterio.micro_amenaza_O);
@@ -624,10 +625,10 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
             if (micro[m][4] === 'X') score += criterio.bonus_centro;
             if (micro[m][4] === 'O') score -= criterio.bonus_centro;
 
-            // Si X est· a punto de ganar este tablero, el Ìndice 'm' es una casilla minada para O.
+            // Si X est√° a punto de ganar este tablero, el √≠ndice 'm' es una casilla minada para O.
             if (amenazaX) asfixia += valorEstrategicoX[m];
 
-            // Si O est· a punto de ganar, X sufre el bloqueo
+            // Si O est√° a punto de ganar, X sufre el bloqueo
             if (amenazaO) asfixia -= valorEstrategicoO[m];
 
         } else {
@@ -637,7 +638,7 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
 
     score += asfixia;
 
-    // FASE 3: EVALUACI”N MACRO PROYECTADA
+    // FASE 3: EVALUACI√ìN MACRO PROYECTADA
     let macroScore = 0;
     for (let line of winLines) {
         let val0 = macroContinuo[line[0]];
@@ -659,7 +660,7 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
 
     score += (macroScore * criterio.macro_peso);
 
-    // FASE 4: CASTIGO DIRECTO POR VÕA LIBRE
+    // FASE 4: CASTIGO DIRECTO POR V√çA LIBRE
     if (active === -1) {
         if (isMaximizing) score += criterio.vialibre;
         else score -= criterio.vialibre;
@@ -680,9 +681,9 @@ function actualizarControles() {
     } else if (modo === 'pvia') {
         startSelect.style.display = 'inline-block';
         botLevelSelect.style.display = 'inline-block';
-        botLevelSelect.options[0].text = "IA: F·cil";
+        botLevelSelect.options[0].text = "IA: F√°cil";
         botLevelSelect.options[1].text = "IA: Medio";
-        botLevelSelect.options[2].text = "IA: DifÌcil";
+        botLevelSelect.options[2].text = "IA: Dif√≠cil";
     }
 }
 
