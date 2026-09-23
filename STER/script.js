@@ -23,21 +23,21 @@ let tablas = 0;
 let procesandoIA = false;
 let historial = [];
 let idPartida = 0;
+let ultimoMov = null;
+let ultimoMacroGanado = -1; // Rastrea el cuadrante que se acaba de ganar para animarlo
 
 // ==========================================
-// ZOBRIST HASHING Y TABLA DE TRANSPOSICIÓN (64-bits)
+// ZOBRIST HASHING Y TABLA DE TRANSPOSICI�N (64-bits)
 // ==========================================
-
 const ZOBRIST_PIECE = Array(9).fill(null).map(() => Array(9).fill(null).map(() => Array(2).fill(0n)));
-const ZOBRIST_ACTIVE = Array(10).fill(0n); // 0-8 para macros, 9 para activeMacro = -1
+const ZOBRIST_ACTIVE = Array(10).fill(0n);
 let ZOBRIST_TURN = 0n;
 
 let tablaTransposicion = new Map();
 const TT_EXACT = 0;
-const TT_ALPHA = 1; // Límite superior
-const TT_BETA = 2;  // Límite inferior
+const TT_ALPHA = 1;
+const TT_BETA = 2;
 
-// Generador de números aleatorios de 64 bits usando BigInt
 function random64() {
     const high = BigInt(Math.floor(Math.random() * 0x100000000));
     const low = BigInt(Math.floor(Math.random() * 0x100000000));
@@ -47,8 +47,8 @@ function random64() {
 function inicializarZobrist() {
     for (let m = 0; m < 9; m++) {
         for (let i = 0; i < 9; i++) {
-            ZOBRIST_PIECE[m][i][0] = random64(); // Representa X
-            ZOBRIST_PIECE[m][i][1] = random64(); // Representa O
+            ZOBRIST_PIECE[m][i][0] = random64();
+            ZOBRIST_PIECE[m][i][1] = random64();
         }
     }
     for (let i = 0; i < 10; i++) {
@@ -59,7 +59,7 @@ function inicializarZobrist() {
 inicializarZobrist();
 
 function calcularHashInicial(micro, active, isTurnoX) {
-    let h = 0n; // Inicializamos como BigInt
+    let h = 0n;
     for (let m = 0; m < 9; m++) {
         for (let i = 0; i < 9; i++) {
             if (micro[m][i] === 'X') h ^= ZOBRIST_PIECE[m][i][0];
@@ -72,7 +72,7 @@ function calcularHashInicial(micro, active, isTurnoX) {
     return h;
 }
 
-// Configuración Heurística Parametrizable (El "Instinto" de la IA optimizado)
+// Configuraci�n Heur�stica Parametrizable
 let criterio = {
     vialibre: 43.00597740846656,
     macro_peso: 164.65294272749256,
@@ -116,6 +116,8 @@ function inicializarTablero() {
     activeMacro = -1;
     turnoX = true;
     procesandoIA = false;
+    ultimoMov = null;
+    ultimoMacroGanado = -1; // Resetear la animaci�n
 
     historial = [];
     undoBtn.disabled = true;
@@ -165,6 +167,8 @@ function deshacerJugada() {
         victoriasX = estadoAnterior.vX;
         victoriasO = estadoAnterior.vO;
         tablas = estadoAnterior.t;
+        ultimoMov = null;
+        ultimoMacroGanado = -1; // No animar nada al deshacer
 
         const existing = document.getElementById('endOverlay');
         if (existing) existing.remove();
@@ -185,6 +189,11 @@ function dibujarTablero() {
         if (macroBoard[m] !== null) {
             macroDiv.classList.add('won');
             macroDiv.setAttribute('data-winner', macroBoard[m]);
+
+            // Aplicar la animaci�n si este es el cuadrante que se acaba de ganar
+            if (ultimoMacroGanado === m) {
+                macroDiv.classList.add('animate-capture');
+            }
         }
 
         if (activeMacro === m || (activeMacro === -1 && macroBoard[m] === null)) {
@@ -195,8 +204,25 @@ function dibujarTablero() {
 
         for (let i = 0; i < 9; i++) {
             const microDiv = document.createElement('div');
-            microDiv.className = `micro-cell ${microBoards[m][i] || ''}`;
-            microDiv.textContent = microBoards[m][i] || '';
+            microDiv.className = `micro-cell`;
+
+            const isNewest = (ultimoMov && ultimoMov.m === m && ultimoMov.i === i);
+            const animClass = isNewest ? 'animate-draw' : '';
+
+            if (microBoards[m][i] === 'X') {
+                microDiv.innerHTML = `
+                    <svg viewBox="0 0 100 100" class="piece-x ${animClass}">
+                        <path d="M 20 20 L 80 80" class="path-x1" />
+                        <path d="M 80 20 L 20 80" class="path-x2" />
+                    </svg>`;
+            } else if (microBoards[m][i] === 'O') {
+                microDiv.innerHTML = `
+                    <svg viewBox="0 0 100 100" class="piece-o ${animClass}">
+                        <circle cx="50" cy="50" r="35" class="path-o" />
+                    </svg>`;
+            } else {
+                microDiv.innerHTML = '';
+            }
 
             microDiv.addEventListener('click', () => manejarJugada(m, i));
             macroDiv.appendChild(microDiv);
@@ -250,29 +276,38 @@ function manejarJugada(m, i) {
     if (microBoards[m][i] !== null) return;
 
     guardarEstado();
+    ultimoMov = { m, i };
+    ultimoMacroGanado = -1; // Resetear antes de comprobar la jugada
+
+    let estadoAnteriorMacro = macroBoard[m]; // Recordar c�mo estaba este cuadrante
 
     aplicarMovimiento(microBoards, macroBoard, m, i, turnoX ? 'X' : 'O');
-    dibujarTablero();
+
+    // Si antes el macrotablero estaba vac�o y ahora tiene ganador, es que lo hemos ganado AHORA
+    if (estadoAnteriorMacro === null && macroBoard[m] !== null) {
+        ultimoMacroGanado = m;
+    }
 
     let ganadorGlobal = chequearGanador(macroBoard);
     if (ganadorGlobal) {
+        dibujarTablero();
         terminarPartida(ganadorGlobal);
         return;
     } else if (chequearEmpate(macroBoard)) {
+        dibujarTablero();
         terminarPartida('-');
         return;
     }
 
     turnoX = !turnoX;
     actualizarUI();
+    dibujarTablero();
 
     const modo = modoSelect.value;
     const tocaIA = (modo === 'pvia' && ((startSelect.value === 'ia' && turnoX) || (startSelect.value === 'humano' && !turnoX)));
 
     if (tocaIA) {
         ejecutarIA();
-    } else {
-        dibujarTablero();
     }
 }
 
@@ -302,7 +337,7 @@ function terminarPartida(ganador) {
     panel.className = 'endPanel';
 
     const titulo = document.createElement('h2');
-    titulo.textContent = ganador === '-' ? '¡Tablas Totales!' : `¡Ganó ${ganador}!`;
+    titulo.textContent = ganador === '-' ? '�Tablas Totales!' : `�Gan� ${ganador}!`;
 
     const btn = document.createElement('button');
     btn.textContent = 'Jugar de nuevo';
@@ -315,18 +350,17 @@ function terminarPartida(ganador) {
 }
 
 // ==========================================
-// IA: MOTOR ITERATIVO Y MÉTODOS DE BÚSQUEDA
+// IA: MOTOR ITERATIVO Y M�TODOS DE B�SQUEDA
 // ==========================================
 
 async function ejecutarIA() {
     const miPartida = idPartida;
     procesandoIA = true;
-    dibujarTablero();
-    await sleep(50);
+
+    await sleep(1000);
 
     if (miPartida !== idPartida) return;
 
-    // Evitar desbordamiento de memoria RAM
     if (tablaTransposicion.size > 500000) tablaTransposicion.clear();
 
     const macroClon = JSON.parse(JSON.stringify(macroBoard));
@@ -350,7 +384,6 @@ async function ejecutarIA() {
 
     rootMoves.forEach(m => m.score = criterio.pesoCasilla[m.i]);
 
-    // Calcular la firma inicial de la posición
     let initialHash = calcularHashInicial(microClon, activeMacro, turnoX);
     let activeIdxOld = (activeMacro === -1) ? 9 : activeMacro;
 
@@ -375,7 +408,6 @@ async function ejecutarIA() {
 
             let proxActivo = tMacro[mov.i] === null ? mov.i : -1;
 
-            // Actualización incremental del hash (Zobrist rápido)
             let nextHash = initialHash;
             nextHash ^= turnoX ? ZOBRIST_PIECE[mov.m][mov.i][0] : ZOBRIST_PIECE[mov.m][mov.i][1];
             nextHash ^= ZOBRIST_ACTIVE[activeIdxOld];
@@ -400,7 +432,7 @@ async function ejecutarIA() {
         if (tiempoAgotado) break;
         else {
             mejorMovGlobal = mejorMovNivel;
-            if (Math.abs(mejorValor) > 9000) break; // Si ve una victoria forzada, deja de pensar
+            if (Math.abs(mejorValor) > 9000) break;
         }
         profundidad++;
     }
@@ -418,10 +450,9 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
     let originalAlpha = alpha;
     let ttMove = null;
 
-    // --- LECTURA DE LA TABLA DE TRANSPOSICIÓN ---
     if (tablaTransposicion.has(currentHash)) {
         let ttEntry = tablaTransposicion.get(currentHash);
-        ttMove = ttEntry.bestMov; // Recuperamos el mejor movimiento histórico
+        ttMove = ttEntry.bestMov;
 
         if (ttEntry.depth >= depth) {
             if (ttEntry.flag === TT_EXACT) return ttEntry.value;
@@ -440,8 +471,6 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
     const movs = obtenerMovimientosPosibles(macro, micro, active);
     if (movs.length === 0) return 0;
 
-    // --- ORDENACIÓN PV (Principal Variation / TT Move) ---
-    // Si la TT nos dio un movimiento, lo ponemos el primero de la lista
     if (ttMove) {
         const idx = movs.findIndex(m => m.m === ttMove.m && m.i === ttMove.i);
         if (idx > 0) {
@@ -451,7 +480,7 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
     }
 
     let bestVal = isMaximizing ? -Infinity : Infinity;
-    let bestLocalMov = null; // Variable para trackear el mejor movimiento local
+    let bestLocalMov = null;
     let activeIdxOld = (active === -1) ? 9 : active;
 
     if (isMaximizing) {
@@ -469,7 +498,7 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
 
             if (ev > bestVal) {
                 bestVal = ev;
-                bestLocalMov = mov; // Lo guardamos si superó al récord anterior
+                bestLocalMov = mov;
             }
             alpha = Math.max(alpha, ev);
             if (beta <= alpha) break;
@@ -496,12 +525,10 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
         }
     }
 
-    // --- ESCRITURA EN LA TABLA DE TRANSPOSICIÓN ---
     let flag = TT_EXACT;
     if (bestVal <= originalAlpha) flag = TT_ALPHA;
     else if (bestVal >= beta) flag = TT_BETA;
 
-    // Guardamos también el mejor movimiento encontrado para ayudar a futuras ramas
     tablaTransposicion.set(currentHash, { value: bestVal, depth: depth, flag: flag, bestMov: bestLocalMov });
 
     return bestVal;
@@ -536,14 +563,12 @@ function obtenerMovimientosPosibles(macro, micro, active) {
         }
     }
 
-    // Ordenación interna utilizando los pesos optimizados genéticamente
     movs.sort((a, b) => criterio.pesoCasilla[b.i] - criterio.pesoCasilla[a.i]);
-
     return movs;
 }
 
 // ==========================================
-// SISTEMA DE HEURÍSTICA PROBABILÍSTICA Y CONTEXTUAL
+// SISTEMA DE HEUR�STICA PROBABIL�STICA Y CONTEXTUAL
 // ==========================================
 
 function evaluarProbabilidadYBloqueos(board, pesoAmenazasX, pesoAmenazasO) {
@@ -566,11 +591,11 @@ function evaluarProbabilidadYBloqueos(board, pesoAmenazasX, pesoAmenazasO) {
 
         if (x > 0 && o === 0) {
             probX += pesoAmenazasX[x];
-            if (x === 2) amenazaX = true; // Amenaza letal detectada para X
+            if (x === 2) amenazaX = true;
         }
         if (o > 0 && x === 0) {
             probO += pesoAmenazasO[o];
-            if (o === 2) amenazaO = true; // Amenaza letal detectada para O
+            if (o === 2) amenazaO = true;
         }
     }
 
@@ -585,7 +610,6 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
     let score = 0;
     let macroContinuo = [...macro];
 
-    // FASE 1: MAPA DE VALOR ESTRATÉGICO (Tipificación de Amenazas)
     let valorEstrategicoX = Array(9).fill(0);
     let valorEstrategicoO = Array(9).fill(0);
 
@@ -598,13 +622,11 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
 
         for (let i of line) {
             if (macro[i] === null) {
-                // Lo que gana X si conquista este tablero
                 if (x === 2 && o === 0) valorEstrategicoX[i] += criterio.bloqueos.mate;
                 else if (x === 1 && o === 0) valorEstrategicoX[i] += criterio.bloqueos.ataque;
                 else if (x === 0 && o === 0) valorEstrategicoX[i] += criterio.bloqueos.expansion;
                 else if (o > 0 && x === 0) valorEstrategicoX[i] += criterio.bloqueos.defensa;
 
-                // Lo que gana O si conquista este tablero
                 if (o === 2 && x === 0) valorEstrategicoO[i] += criterio.bloqueos.mate;
                 else if (o === 1 && x === 0) valorEstrategicoO[i] += criterio.bloqueos.ataque;
                 else if (o === 0 && x === 0) valorEstrategicoO[i] += criterio.bloqueos.expansion;
@@ -615,7 +637,6 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
 
     let asfixia = 0;
 
-    // FASE 2: EVALUACIÓN LOCAL Y APLICACIÓN DE BLOQUEOS
     for (let m = 0; m < 9; m++) {
         if (macro[m] === null) {
             let { probTotal, amenazaX, amenazaO } = evaluarProbabilidadYBloqueos(micro[m], criterio.micro_amenaza_X, criterio.micro_amenaza_O);
@@ -625,10 +646,7 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
             if (micro[m][4] === 'X') score += criterio.bonus_centro;
             if (micro[m][4] === 'O') score -= criterio.bonus_centro;
 
-            // Si X está a punto de ganar este tablero, el índice 'm' es una casilla minada para O.
             if (amenazaX) asfixia += valorEstrategicoX[m];
-
-            // Si O está a punto de ganar, X sufre el bloqueo
             if (amenazaO) asfixia -= valorEstrategicoO[m];
 
         } else {
@@ -638,7 +656,6 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
 
     score += asfixia;
 
-    // FASE 3: EVALUACIÓN MACRO PROYECTADA
     let macroScore = 0;
     for (let line of winLines) {
         let val0 = macroContinuo[line[0]];
@@ -660,7 +677,6 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
 
     score += (macroScore * criterio.macro_peso);
 
-    // FASE 4: CASTIGO DIRECTO POR VÍA LIBRE
     if (active === -1) {
         if (isMaximizing) score += criterio.vialibre;
         else score -= criterio.vialibre;
@@ -681,9 +697,9 @@ function actualizarControles() {
     } else if (modo === 'pvia') {
         startSelect.style.display = 'inline-block';
         botLevelSelect.style.display = 'inline-block';
-        botLevelSelect.options[0].text = "IA: Fácil";
+        botLevelSelect.options[0].text = "IA: F�cil";
         botLevelSelect.options[1].text = "IA: Medio";
-        botLevelSelect.options[2].text = "IA: Difícil";
+        botLevelSelect.options[2].text = "IA: Dif�cil";
     }
 }
 

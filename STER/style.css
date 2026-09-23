@@ -138,21 +138,13 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
-    font-weight: 800;
     cursor: pointer;
     aspect-ratio: 1 / 1;
 }
 
-    .micro-cell.X {
-        color: var(--accent);
-    }
-
-    .micro-cell.O {
-        color: var(--accent-o);
-    }
-
-/* Capa de victoria para mini-tableros */
+/* ==========================================
+   CAPA DE VICTORIA Y ANIMACIÓN DE IMPACTO
+   ========================================== */
 .macro-board.won::after {
     content: attr(data-winner);
     position: absolute;
@@ -165,6 +157,7 @@ button {
     font-weight: 900;
     z-index: 5;
     backdrop-filter: blur(2px);
+    transform-origin: center;
 }
 
 .macro-board.won[data-winner="X"]::after {
@@ -179,6 +172,58 @@ button {
     content: '-';
     color: var(--muted);
     font-size: 60px;
+}
+
+/* Animación cuando se captura en este turno */
+.macro-board.animate-capture {
+    animation: captureShake 0.4s ease-out forwards;
+}
+
+    .macro-board.animate-capture::after {
+        animation: capturePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+@keyframes captureShake {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    20% {
+        transform: translate(-3px, 2px) rotate(-1.5deg);
+    }
+
+    40% {
+        transform: translate(3px, -2px) rotate(1.5deg);
+    }
+
+    60% {
+        transform: translate(-3px, -2px) rotate(-1.5deg);
+    }
+
+    80% {
+        transform: translate(3px, 2px) rotate(1.5deg);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
+}
+
+@keyframes capturePop {
+    0% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(0.9);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Panel Info */
@@ -257,3 +302,50 @@ button {
         padding: 10px 20px;
         font-weight: bold;
     }
+
+/* ==========================================
+   ANIMACIÓN VECTORIAL SVG (Piezas X y O)
+   ========================================== */
+.piece-x, .piece-o {
+    width: 70%;
+    height: 70%;
+    fill: none;
+    stroke-width: 14;
+    stroke-linecap: round;
+}
+
+.piece-x {
+    stroke: var(--accent);
+}
+
+.piece-o {
+    stroke: var(--accent-o);
+}
+
+.path-x1, .path-x2, .path-o {
+    stroke-dashoffset: 0;
+}
+
+.animate-draw .path-x1 {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: drawLine 0.5s ease-in-out forwards;
+}
+
+.animate-draw .path-x2 {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: drawLine 0.5s ease-in-out 0.5s forwards;
+}
+
+.animate-draw .path-o {
+    stroke-dasharray: 220;
+    stroke-dashoffset: 220;
+    animation: drawLine 1s ease-in-out forwards;
+}
+
+@keyframes drawLine {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
