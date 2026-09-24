@@ -1,9 +1,6 @@
-// DOM
+// DOM Principal
 const superBoard = document.getElementById('superBoard');
-const modoSelect = document.getElementById('modoSelect');
-const startSelect = document.getElementById('startSelect');
-const botLevelSelect = document.getElementById('botLevelSelect');
-const resetBtn = document.getElementById('resetBtn');
+const menuBtn = document.getElementById('menuBtn');
 const undoBtn = document.getElementById('undoBtn');
 const player1Label = document.getElementById('player1Label');
 const player2Label = document.getElementById('player2Label');
@@ -11,6 +8,62 @@ const turnoDisplay = document.getElementById('turnoDisplay');
 const punt1Elem = document.getElementById('puntuacion1');
 const punt2Elem = document.getElementById('puntuacion2');
 const puntTablasElem = document.getElementById('puntuacionTablas');
+const timer1Elem = document.getElementById('timer1');
+const timer2Elem = document.getElementById('timer2');
+
+// DOM Menú
+const menuOverlay = document.getElementById('menuOverlay');
+const startGameBtn = document.getElementById('startGameBtn');
+const optModo = document.querySelectorAll('#optModo .menu-opt');
+const optDificultad = document.querySelectorAll('#optDificultad .menu-opt');
+const optEmpieza = document.querySelectorAll('#optEmpieza .menu-opt');
+const optReloj = document.querySelectorAll('#optReloj .menu-opt');
+
+// Configuración de la partida 
+let gameConfig = {
+    modo: 'pvia',
+    dificultad: 'medio',
+    empieza: 'humano',
+    reloj: 'none'
+};
+
+// ==========================================
+// LÓGICA DEL MENÚ UI
+// ==========================================
+function setupMenuOptions(nodes, configKey) {
+    nodes.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            nodes.forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            gameConfig[configKey] = e.target.dataset.val;
+
+            // Mostrar/Ocultar Reloj vs Opciones IA según el modo
+            if (configKey === 'modo') {
+                const isPvP = gameConfig.modo === 'pvp';
+                document.getElementById('secDificultad').style.display = isPvP ? 'none' : 'flex';
+                document.getElementById('secEmpieza').style.display = isPvP ? 'none' : 'flex';
+                document.getElementById('secReloj').style.display = isPvP ? 'flex' : 'none';
+            }
+        });
+    });
+}
+
+setupMenuOptions(optModo, 'modo');
+setupMenuOptions(optDificultad, 'dificultad');
+setupMenuOptions(optEmpieza, 'empieza');
+setupMenuOptions(optReloj, 'reloj');
+
+menuBtn.addEventListener('click', () => {
+    menuOverlay.style.display = 'flex';
+});
+
+startGameBtn.addEventListener('click', () => {
+    menuOverlay.style.display = 'none';
+    victoriasX = 0;
+    victoriasO = 0;
+    tablas = 0;
+    inicializarTablero();
+});
 
 // Estado Global
 let microBoards = Array(9).fill(null).map(() => Array(9).fill(null));
@@ -24,19 +77,26 @@ let procesandoIA = false;
 let historial = [];
 let idPartida = 0;
 let ultimoMov = null;
-let ultimoMacroGanado = -1; // Rastrea el cuadrante que se acaba de ganar para animarlo
+let ultimoMacroGanado = -1;
+
+// Reloj de Ajedrez
+let timerObj = null;
+let timeX = 0;
+let timeO = 0;
+let incX = 0;
+let incO = 0;
+let lastTick = 0;
+
+let historyTable = Array(9).fill(null).map(() => Array(9).fill(0));
 
 // ==========================================
-// ZOBRIST HASHING Y TABLA DE TRANSPOSICIÓN (64-bits)
+// ZOBRIST HASHING Y TABLA DE TRANSPOSICIÓN 
 // ==========================================
 const ZOBRIST_PIECE = Array(9).fill(null).map(() => Array(9).fill(null).map(() => Array(2).fill(0n)));
 const ZOBRIST_ACTIVE = Array(10).fill(0n);
 let ZOBRIST_TURN = 0n;
-
 let tablaTransposicion = new Map();
-const TT_EXACT = 0;
-const TT_ALPHA = 1;
-const TT_BETA = 2;
+const TT_EXACT = 0; const TT_ALPHA = 1; const TT_BETA = 2;
 
 function random64() {
     const high = BigInt(Math.floor(Math.random() * 0x100000000));
@@ -51,9 +111,7 @@ function inicializarZobrist() {
             ZOBRIST_PIECE[m][i][1] = random64();
         }
     }
-    for (let i = 0; i < 10; i++) {
-        ZOBRIST_ACTIVE[i] = random64();
-    }
+    for (let i = 0; i < 10; i++) { ZOBRIST_ACTIVE[i] = random64(); }
     ZOBRIST_TURN = random64();
 }
 inicializarZobrist();
@@ -72,29 +130,12 @@ function calcularHashInicial(micro, active, isTurnoX) {
     return h;
 }
 
-// Configuración Heurística Parametrizable
 let criterio = {
-    vialibre: 43.00597740846656,
-    macro_peso: 164.65294272749256,
-    bonus_centro: 0.06449919883523338,
-
-    bloqueos: {
-        mate: 884.5951524587854,
-        defensa: 7.9117707153811185,
-        ataque: 23.642928063677992,
-        expansion: 1.910896181392594
-    },
-
-    micro_amenaza_X: [0.03543845405483699, 0.05649834151787704, 0.2812287939718042],
-    micro_amenaza_O: [-0.01144571614355605, -0.03649601435783531, -0.17804519600322255],
-    macro_amenaza_X: [0.11465330580128974, 0.42164407763860734, 1.1416949340986058],
-    macro_amenaza_O: [-0.039520923106254324, -0.4247141113868449, -0.8014577484893486],
-
-    pesoCasilla: [
-        0.6856582270252987, 3.275085073495567, 0.6520802183884976,
-        0.15412640949126455, 2.4049405957579166, 4.298366057393062,
-        3.1166924920957855, 3.3798887628926195, 1.3091436669045398
-    ]
+    vialibre: 43.00, macro_peso: 164.65, bonus_centro: 0.06,
+    bloqueos: { mate: 884.59, defensa: 7.91, ataque: 23.64, expansion: 1.91 },
+    micro_amenaza_X: [0.035, 0.056, 0.281], micro_amenaza_O: [-0.011, -0.036, -0.178],
+    macro_amenaza_X: [0.114, 0.421, 1.141], macro_amenaza_O: [-0.039, -0.424, -0.801],
+    pesoCasilla: [0.68, 3.27, 0.65, 0.15, 2.40, 4.29, 3.11, 3.37, 1.30]
 };
 
 const winLines = [
@@ -106,7 +147,7 @@ const winLines = [
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ==========================================
-// FLUJO BASE Y DOM
+// FLUJO BASE Y RELOJ
 // ==========================================
 
 function inicializarTablero() {
@@ -117,21 +158,92 @@ function inicializarTablero() {
     turnoX = true;
     procesandoIA = false;
     ultimoMov = null;
-    ultimoMacroGanado = -1; // Resetear la animación
-
+    ultimoMacroGanado = -1;
     historial = [];
     undoBtn.disabled = true;
 
     const existing = document.getElementById('endOverlay');
     if (existing) existing.remove();
 
+    inicializarReloj();
     dibujarTablero();
     actualizarUI();
 
-    const modo = modoSelect.value;
-    if (modo === 'pvia' && startSelect.value === 'ia') {
+    if (gameConfig.modo === 'pvia' && gameConfig.empieza === 'ia') {
         ejecutarIA();
     }
+}
+
+function inicializarReloj() {
+    clearInterval(timerObj);
+    timer1Elem.style.display = 'none';
+    timer2Elem.style.display = 'none';
+
+    if (gameConfig.modo !== 'pvp' || gameConfig.reloj === 'none') return;
+
+    let mins = 0, inc = 0;
+    if (gameConfig.reloj === '10') { mins = 10; inc = 0; }
+    else if (gameConfig.reloj === '5') { mins = 5; inc = 0; }
+    else if (gameConfig.reloj === '3+2') { mins = 3; inc = 2; }
+    else if (gameConfig.reloj === '2+1') { mins = 2; inc = 1; }
+
+    timeX = mins * 60 * 1000;
+    timeO = mins * 60 * 1000;
+    incX = inc * 1000;
+    incO = inc * 1000;
+
+    timer1Elem.style.display = 'block';
+    timer2Elem.style.display = 'block';
+    actualizarTiemposDOM();
+
+    lastTick = Date.now();
+    timerObj = setInterval(tickTimer, 100);
+}
+
+function tickTimer() {
+    let now = Date.now();
+    let delta = now - lastTick;
+    lastTick = now;
+
+    if (turnoX) {
+        timeX -= delta;
+        if (timeX <= 0) { timeX = 0; terminarPartidaPorTiempo('O'); return; }
+    } else {
+        timeO -= delta;
+        if (timeO <= 0) { timeO = 0; terminarPartidaPorTiempo('X'); return; }
+    }
+    actualizarTiemposDOM();
+}
+
+function formatTime(ms) {
+    if (ms <= 0) return "0:00.0";
+    let totalSecs = Math.floor(ms / 1000);
+    let mins = Math.floor(totalSecs / 60);
+    let secs = totalSecs % 60;
+
+    if (mins > 0) {
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    } else {
+        let decis = Math.floor((ms % 1000) / 100);
+        return `${secs}.${decis}`;
+    }
+}
+
+function actualizarTiemposDOM() {
+    timer1Elem.textContent = formatTime(timeX);
+    timer2Elem.textContent = formatTime(timeO);
+
+    timer1Elem.classList.toggle('danger', timeX < 10000 && timeX > 0);
+    timer2Elem.classList.toggle('danger', timeO < 10000 && timeO > 0);
+
+    timer1Elem.style.opacity = turnoX ? "1" : "0.5";
+    timer2Elem.style.opacity = !turnoX ? "1" : "0.5";
+}
+
+function terminarPartidaPorTiempo(ganador) {
+    clearInterval(timerObj);
+    actualizarTiemposDOM();
+    terminarPartida(ganador, true);
 }
 
 function guardarEstado() {
@@ -151,13 +263,9 @@ function deshacerJugada() {
     if (procesandoIA) return;
     if (historial.length === 0) return;
 
-    const esPvIA = modoSelect.value === 'pvia';
-    const pasosADeshacer = (esPvIA && historial.length >= 2) ? 2 : 1;
-
+    const pasosADeshacer = (gameConfig.modo === 'pvia' && historial.length >= 2) ? 2 : 1;
     let estadoAnterior;
-    for (let j = 0; j < pasosADeshacer; j++) {
-        estadoAnterior = historial.pop();
-    }
+    for (let j = 0; j < pasosADeshacer; j++) { estadoAnterior = historial.pop(); }
 
     if (estadoAnterior) {
         microBoards = estadoAnterior.micro;
@@ -168,7 +276,7 @@ function deshacerJugada() {
         victoriasO = estadoAnterior.vO;
         tablas = estadoAnterior.t;
         ultimoMov = null;
-        ultimoMacroGanado = -1; // No animar nada al deshacer
+        ultimoMacroGanado = -1;
 
         const existing = document.getElementById('endOverlay');
         if (existing) existing.remove();
@@ -177,6 +285,9 @@ function deshacerJugada() {
 
         dibujarTablero();
         actualizarUI();
+        if (gameConfig.modo === 'pvp' && gameConfig.reloj !== 'none') {
+            actualizarTiemposDOM();
+        }
     }
 }
 
@@ -190,16 +301,11 @@ function dibujarTablero() {
             macroDiv.classList.add('won');
             macroDiv.setAttribute('data-winner', macroBoard[m]);
 
-            // Aplicar la animación si este es el cuadrante que se acaba de ganar
-            if (ultimoMacroGanado === m) {
-                macroDiv.classList.add('animate-capture');
-            }
+            if (ultimoMacroGanado === m) macroDiv.classList.add('animate-capture');
         }
 
         if (activeMacro === m || (activeMacro === -1 && macroBoard[m] === null)) {
-            if (macroBoard[m] === null && !procesandoIA) {
-                macroDiv.classList.add('active');
-            }
+            if (macroBoard[m] === null && !procesandoIA) macroDiv.classList.add('active');
         }
 
         for (let i = 0; i < 9; i++) {
@@ -210,16 +316,9 @@ function dibujarTablero() {
             const animClass = isNewest ? 'animate-draw' : '';
 
             if (microBoards[m][i] === 'X') {
-                microDiv.innerHTML = `
-                    <svg viewBox="0 0 100 100" class="piece-x ${animClass}">
-                        <path d="M 20 20 L 80 80" class="path-x1" />
-                        <path d="M 80 20 L 20 80" class="path-x2" />
-                    </svg>`;
+                microDiv.innerHTML = `<svg viewBox="0 0 100 100" class="piece-x ${animClass}"><path d="M 20 20 L 80 80" class="path-x1" /><path d="M 80 20 L 20 80" class="path-x2" /></svg>`;
             } else if (microBoards[m][i] === 'O') {
-                microDiv.innerHTML = `
-                    <svg viewBox="0 0 100 100" class="piece-o ${animClass}">
-                        <circle cx="50" cy="50" r="35" class="path-o" />
-                    </svg>`;
+                microDiv.innerHTML = `<svg viewBox="0 0 100 100" class="piece-o ${animClass}"><circle cx="50" cy="50" r="35" class="path-o" /></svg>`;
             } else {
                 microDiv.innerHTML = '';
             }
@@ -232,13 +331,12 @@ function dibujarTablero() {
 }
 
 function actualizarUI() {
-    const modo = modoSelect.value;
-    const iaEmpieza = startSelect.value === 'ia';
+    const iaEmpieza = gameConfig.empieza === 'ia';
 
-    if (modo === 'pvp') {
+    if (gameConfig.modo === 'pvp') {
         player1Label.textContent = 'Jugador 1 (X)';
         player2Label.textContent = 'Jugador 2 (O)';
-    } else if (modo === 'pvia') {
+    } else if (gameConfig.modo === 'pvia') {
         player1Label.textContent = iaEmpieza ? 'IA (X)' : 'Jugador 1 (X)';
         player2Label.textContent = iaEmpieza ? 'Jugador 2 (O)' : 'IA (O)';
     }
@@ -265,9 +363,7 @@ function chequearGanador(board) {
     return null;
 }
 
-function chequearEmpate(board) {
-    return board.every(cell => cell !== null);
-}
+function chequearEmpate(board) { return board.every(cell => cell !== null); }
 
 function manejarJugada(m, i) {
     if (procesandoIA) return;
@@ -277,13 +373,12 @@ function manejarJugada(m, i) {
 
     guardarEstado();
     ultimoMov = { m, i };
-    ultimoMacroGanado = -1; // Resetear antes de comprobar la jugada
+    ultimoMacroGanado = -1;
 
-    let estadoAnteriorMacro = macroBoard[m]; // Recordar cómo estaba este cuadrante
+    let estadoAnteriorMacro = macroBoard[m];
 
     aplicarMovimiento(microBoards, macroBoard, m, i, turnoX ? 'X' : 'O');
 
-    // Si antes el macrotablero estaba vacío y ahora tiene ganador, es que lo hemos ganado AHORA
     if (estadoAnteriorMacro === null && macroBoard[m] !== null) {
         ultimoMacroGanado = m;
     }
@@ -299,12 +394,17 @@ function manejarJugada(m, i) {
         return;
     }
 
+    if (gameConfig.modo === 'pvp' && gameConfig.reloj !== 'none') {
+        if (turnoX) timeX += incX;
+        else timeO += incO;
+        actualizarTiemposDOM();
+    }
+
     turnoX = !turnoX;
     actualizarUI();
     dibujarTablero();
 
-    const modo = modoSelect.value;
-    const tocaIA = (modo === 'pvia' && ((startSelect.value === 'ia' && turnoX) || (startSelect.value === 'humano' && !turnoX)));
+    const tocaIA = (gameConfig.modo === 'pvia' && ((gameConfig.empieza === 'ia' && turnoX) || (gameConfig.empieza === 'humano' && !turnoX)));
 
     if (tocaIA) {
         ejecutarIA();
@@ -313,18 +413,15 @@ function manejarJugada(m, i) {
 
 function aplicarMovimiento(micro, macro, m, i, jugador) {
     micro[m][i] = jugador;
-
     let ganadorMicro = chequearGanador(micro[m]);
-    if (ganadorMicro) {
-        macro[m] = ganadorMicro;
-    } else if (chequearEmpate(micro[m])) {
-        macro[m] = '-';
-    }
+    if (ganadorMicro) macro[m] = ganadorMicro;
+    else if (chequearEmpate(micro[m])) macro[m] = '-';
 
     activeMacro = macro[i] === null ? i : -1;
 }
 
-function terminarPartida(ganador) {
+function terminarPartida(ganador, porTiempo = false) {
+    clearInterval(timerObj);
     if (ganador === 'X') victoriasX++;
     else if (ganador === 'O') victoriasO++;
     else if (ganador === '-') tablas++;
@@ -337,11 +434,19 @@ function terminarPartida(ganador) {
     panel.className = 'endPanel';
 
     const titulo = document.createElement('h2');
-    titulo.textContent = ganador === '-' ? '¡Tablas Totales!' : `¡Ganó ${ganador}!`;
+    if (ganador === '-') {
+        titulo.textContent = '¡Tablas Totales!';
+    } else {
+        titulo.textContent = porTiempo ? `¡Tiempo Agotado! Ganó ${ganador}` : `¡Ganó ${ganador}!`;
+        if (porTiempo) titulo.style.color = "var(--accent-o)";
+    }
 
     const btn = document.createElement('button');
     btn.textContent = 'Jugar de nuevo';
-    btn.onclick = inicializarTablero;
+    btn.onclick = () => {
+        menuOverlay.style.display = 'flex';
+        overlay.remove();
+    };
 
     panel.appendChild(titulo);
     panel.appendChild(btn);
@@ -358,10 +463,10 @@ async function ejecutarIA() {
     procesandoIA = true;
 
     await sleep(1000);
-
     if (miPartida !== idPartida) return;
 
     if (tablaTransposicion.size > 500000) tablaTransposicion.clear();
+    historyTable = Array(9).fill(null).map(() => Array(9).fill(0));
 
     const macroClon = JSON.parse(JSON.stringify(macroBoard));
     const microClon = JSON.parse(JSON.stringify(microBoards));
@@ -370,7 +475,7 @@ async function ejecutarIA() {
     let TIEMPO_MAXIMO_MS = 800;
     let limiteProfundidad = 100;
 
-    const nivel = botLevelSelect.value;
+    const nivel = gameConfig.dificultad;
     if (nivel === 'facil') { TIEMPO_MAXIMO_MS = 100; limiteProfundidad = 2; }
     else if (nivel === 'medio') { TIEMPO_MAXIMO_MS = 400; limiteProfundidad = 4; }
     else if (nivel === 'dificil') { TIEMPO_MAXIMO_MS = 1500; limiteProfundidad = 20; }
@@ -466,7 +571,7 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
     if (ganador === 'O') return -10000 - depth;
     if (chequearEmpate(macro)) return 0;
 
-    if (depth === 0) return evaluarTablero(macro, micro, active, isMaximizing);
+    if (depth === 0) return quiescencia(macro, micro, active, alpha, beta, isMaximizing, tiempoInicio, tiempoMaximo, 0);
 
     const movs = obtenerMovimientosPosibles(macro, micro, active);
     if (movs.length === 0) return 0;
@@ -501,7 +606,11 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
                 bestLocalMov = mov;
             }
             alpha = Math.max(alpha, ev);
-            if (beta <= alpha) break;
+
+            if (beta <= alpha) {
+                historyTable[mov.m][mov.i] += (depth * depth);
+                break;
+            }
         }
     } else {
         for (let mov of movs) {
@@ -521,7 +630,11 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
                 bestLocalMov = mov;
             }
             beta = Math.min(beta, ev);
-            if (beta <= alpha) break;
+
+            if (beta <= alpha) {
+                historyTable[mov.m][mov.i] += (depth * depth);
+                break;
+            }
         }
     }
 
@@ -534,10 +647,74 @@ function minimax(macro, micro, active, depth, alpha, beta, isMaximizing, tiempoI
     return bestVal;
 }
 
+// ==========================================
+// BÚSQUEDA DE QUIESCENCIA
+// ==========================================
+function esMovimientoTactico(microLocal, i, jugador) {
+    microLocal[i] = jugador;
+    let gana = false;
+    for (let line of winLines) {
+        if (microLocal[line[0]] === jugador && microLocal[line[1]] === jugador && microLocal[line[2]] === jugador) { gana = true; break; }
+    }
+    microLocal[i] = null;
+    return gana;
+}
+
+function quiescencia(macro, micro, active, alpha, beta, isMaximizing, tiempoInicio, tiempoMaximo, qsDepth) {
+    if (Date.now() - tiempoInicio > tiempoMaximo) return null;
+    if (qsDepth >= 4) return evaluarTablero(macro, micro, active, isMaximizing);
+
+    let ganador = chequearGanador(macro);
+    if (ganador === 'X') return 10000;
+    if (ganador === 'O') return -10000;
+    if (chequearEmpate(macro)) return 0;
+
+    let standPat = evaluarTablero(macro, micro, active, isMaximizing);
+
+    if (isMaximizing) {
+        if (standPat >= beta) return beta;
+        if (standPat > alpha) alpha = standPat;
+    } else {
+        if (standPat <= alpha) return alpha;
+        if (standPat < beta) beta = standPat;
+    }
+
+    const movs = obtenerMovimientosPosibles(macro, micro, active);
+    if (movs.length === 0) return standPat;
+
+    const jugadorTurno = isMaximizing ? 'X' : 'O';
+    let movsTacticos = movs.filter(mov => esMovimientoTactico(micro[mov.m], mov.i, jugadorTurno));
+
+    if (movsTacticos.length === 0) return standPat;
+
+    if (isMaximizing) {
+        let bestVal = standPat;
+        for (let mov of movsTacticos) {
+            const { nMacro, nMicro, nActive } = simular(macro, micro, mov, 'X');
+            let ev = quiescencia(nMacro, nMicro, nActive, alpha, beta, false, tiempoInicio, tiempoMaximo, qsDepth + 1);
+            if (ev === null) return null;
+            bestVal = Math.max(bestVal, ev);
+            alpha = Math.max(alpha, ev);
+            if (beta <= alpha) break;
+        }
+        return bestVal;
+    } else {
+        let bestVal = standPat;
+        for (let mov of movsTacticos) {
+            const { nMacro, nMicro, nActive } = simular(macro, micro, mov, 'O');
+            let ev = quiescencia(nMacro, nMicro, nActive, alpha, beta, true, tiempoInicio, tiempoMaximo, qsDepth + 1);
+            if (ev === null) return null;
+            bestVal = Math.min(bestVal, ev);
+            beta = Math.min(beta, ev);
+            if (beta <= alpha) break;
+        }
+        return bestVal;
+    }
+}
+
 function simular(macro, micro, mov, jugador) {
     const nMacro = [...macro];
     const nMicro = micro.map(arr => [...arr]);
-
     nMicro[mov.m][mov.i] = jugador;
     let gMicro = chequearGanador(nMicro[mov.m]);
     if (gMicro) nMacro[mov.m] = gMicro;
@@ -563,24 +740,24 @@ function obtenerMovimientosPosibles(macro, micro, active) {
         }
     }
 
-    movs.sort((a, b) => criterio.pesoCasilla[b.i] - criterio.pesoCasilla[a.i]);
+    movs.sort((a, b) => {
+        let scoreA = criterio.pesoCasilla[a.i] + historyTable[a.m][a.i];
+        let scoreB = criterio.pesoCasilla[b.i] + historyTable[b.m][b.i];
+        return scoreB - scoreA;
+    });
     return movs;
 }
 
 // ==========================================
-// SISTEMA DE HEURÍSTICA PROBABILÍSTICA Y CONTEXTUAL
+// EVALUACIÓN HEURÍSTICA
 // ==========================================
-
 function evaluarProbabilidadYBloqueos(board, pesoAmenazasX, pesoAmenazasO) {
     let ganador = chequearGanador(board);
     if (ganador === 'X') return { probTotal: 1.0, amenazaX: false, amenazaO: false };
     if (ganador === 'O') return { probTotal: -1.0, amenazaX: false, amenazaO: false };
     if (chequearEmpate(board)) return { probTotal: 0.0, amenazaX: false, amenazaO: false };
 
-    let probX = 0;
-    let probO = 0;
-    let amenazaX = false;
-    let amenazaO = false;
+    let probX = 0, probO = 0, amenazaX = false, amenazaO = false;
 
     for (let line of winLines) {
         let x = 0, o = 0;
@@ -588,15 +765,8 @@ function evaluarProbabilidadYBloqueos(board, pesoAmenazasX, pesoAmenazasO) {
             if (board[i] === 'X') x++;
             else if (board[i] === 'O') o++;
         }
-
-        if (x > 0 && o === 0) {
-            probX += pesoAmenazasX[x];
-            if (x === 2) amenazaX = true;
-        }
-        if (o > 0 && x === 0) {
-            probO += pesoAmenazasO[o];
-            if (o === 2) amenazaO = true;
-        }
+        if (x > 0 && o === 0) { probX += pesoAmenazasX[x]; if (x === 2) amenazaX = true; }
+        if (o > 0 && x === 0) { probO += pesoAmenazasO[o]; if (o === 2) amenazaO = true; }
     }
 
     let probTotal = probX + probO;
@@ -607,11 +777,8 @@ function evaluarProbabilidadYBloqueos(board, pesoAmenazasX, pesoAmenazasO) {
 }
 
 function evaluarTablero(macro, micro, active, isMaximizing) {
-    let score = 0;
-    let macroContinuo = [...macro];
-
-    let valorEstrategicoX = Array(9).fill(0);
-    let valorEstrategicoO = Array(9).fill(0);
+    let score = 0; let macroContinuo = [...macro];
+    let valorEstrategicoX = Array(9).fill(0), valorEstrategicoO = Array(9).fill(0);
 
     for (let line of winLines) {
         let x = 0, o = 0;
@@ -619,7 +786,6 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
             if (macro[i] === 'X') x++;
             else if (macro[i] === 'O') o++;
         }
-
         for (let i of line) {
             if (macro[i] === null) {
                 if (x === 2 && o === 0) valorEstrategicoX[i] += criterio.bloqueos.mate;
@@ -636,34 +802,26 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
     }
 
     let asfixia = 0;
-
     for (let m = 0; m < 9; m++) {
         if (macro[m] === null) {
             let { probTotal, amenazaX, amenazaO } = evaluarProbabilidadYBloqueos(micro[m], criterio.micro_amenaza_X, criterio.micro_amenaza_O);
-            score += probTotal;
-            macroContinuo[m] = probTotal;
+            score += probTotal; macroContinuo[m] = probTotal;
 
             if (micro[m][4] === 'X') score += criterio.bonus_centro;
             if (micro[m][4] === 'O') score -= criterio.bonus_centro;
 
             if (amenazaX) asfixia += valorEstrategicoX[m];
             if (amenazaO) asfixia -= valorEstrategicoO[m];
-
         } else {
             macroContinuo[m] = (macro[m] === 'X') ? 1.0 : (macro[m] === 'O' ? -1.0 : 0.0);
         }
     }
 
     score += asfixia;
-
     let macroScore = 0;
+
     for (let line of winLines) {
-        let val0 = macroContinuo[line[0]];
-        let val1 = macroContinuo[line[1]];
-        let val2 = macroContinuo[line[2]];
-
-        let sumaLinea = val0 + val1 + val2;
-
+        let sumaLinea = macroContinuo[line[0]] + macroContinuo[line[1]] + macroContinuo[line[2]];
         if (sumaLinea > 0.1) {
             if (sumaLinea > 2.0) macroScore += criterio.macro_amenaza_X[2];
             else if (sumaLinea > 1.0) macroScore += criterio.macro_amenaza_X[1];
@@ -676,43 +834,9 @@ function evaluarTablero(macro, micro, active, isMaximizing) {
     }
 
     score += (macroScore * criterio.macro_peso);
-
-    if (active === -1) {
-        if (isMaximizing) score += criterio.vialibre;
-        else score -= criterio.vialibre;
-    }
-
+    if (active === -1) { score += isMaximizing ? criterio.vialibre : -criterio.vialibre; }
     return score;
 }
 
-// ------------------------------------------
-// EVENTOS Y ARRANQUE
-// ------------------------------------------
-
-function actualizarControles() {
-    const modo = modoSelect.value;
-    if (modo === 'pvp') {
-        startSelect.style.display = 'none';
-        botLevelSelect.style.display = 'none';
-    } else if (modo === 'pvia') {
-        startSelect.style.display = 'inline-block';
-        botLevelSelect.style.display = 'inline-block';
-        botLevelSelect.options[0].text = "IA: Fácil";
-        botLevelSelect.options[1].text = "IA: Medio";
-        botLevelSelect.options[2].text = "IA: Difícil";
-    }
-}
-
-resetBtn.addEventListener('click', inicializarTablero);
-undoBtn.addEventListener('click', deshacerJugada);
-
-modoSelect.addEventListener('change', () => {
-    actualizarControles();
-    inicializarTablero();
-});
-startSelect.addEventListener('change', inicializarTablero);
-botLevelSelect.addEventListener('change', inicializarTablero);
-
-// Iniciar app
-actualizarControles();
-inicializarTablero();
+// Abrir el menú al cargar la página por primera vez
+menuOverlay.style.display = 'flex';
