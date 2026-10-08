@@ -11,7 +11,7 @@ const berriroBotoia = document.getElementById('berriroBotoia');
 const mailaErakuslea = document.getElementById('mailaErakuslea');
 const teklak = document.querySelectorAll('.tekla');
 
-// PARAMETROAK (Aldatu balio hau probabilitateekin jolasteko)
+// PARAMETROAK
 const PROBABILITATE_OINARRIA = 1.5;
 
 // Egoeraren aldagaiak
@@ -29,14 +29,20 @@ const MAILA_IGOTZEKO_SARIA = 20000;
 
 const ERAGIKETAK = ['+', '-', '*', '/', 'MKT', 'ZKH'];
 
-// Euclidesen algoritmoa Zatitzaile Komun Handiena (ZKH) kalkulatzeko
 function lortuZkh(a, b) {
     return b === 0 ? a : lortuZkh(b, a % b);
 }
 
-// Multiplo Komunetako Txikiena (MKT)
 function lortuMkt(a, b) {
     return (a * b) / lortuZkh(a, b);
+}
+
+function kalkulatuEragiketaKopurua(puntuak) {
+    if (puntuak < 10) return 2;
+    if (puntuak < 30) return 3;
+    if (puntuak < 60) return 4;
+    if (puntuak < 100) return 5;
+    return 6;
 }
 
 function hasiJokoa() {
@@ -68,9 +74,7 @@ function eguneratuDenboraBisualak() {
     const M = gehienezkoDenboraBisuala;
     const A = 0.1;
 
-    // Irudipen bisuala sortzeko funtzio matematikoa
     let denboraBisuala = x * (1 + ((1 - A) / M) * (x - M));
-
     let ehunekoa = (denboraBisuala / M) * 100;
 
     if (ehunekoa > 100) ehunekoa = 100;
@@ -78,7 +82,6 @@ function eguneratuDenboraBisualak() {
 
     denboraBarra.style.width = ehunekoa + '%';
 
-    // Alerta bisuala benetako denboran oinarrituta
     if (geratzenDenDenbora < 15000) {
         denboraBarra.classList.add('abisua');
     } else {
@@ -89,15 +92,12 @@ function eguneratuDenboraBisualak() {
 function amaituJokoa() {
     clearInterval(tenporizadorea);
     azkenPuntuazioa.textContent = puntuazioa;
-
-    // Azken eragiketa eta erantzuna erakutsi
     azkenEragiketa.textContent = galderaErakuslea.textContent + ' = ' + unekoErantzuna;
-
     amaieraGainjartzea.style.display = "flex";
 }
 
 function lortuEragiketaEskuragarriak() {
-    let n = Math.min(6, 2 + Math.floor(puntuazioa / 10));
+    let n = kalkulatuEragiketaKopurua(puntuazioa);
 
     if (n === 2) mailaErakuslea.textContent = "1. Maila (+, -)";
     else if (n === 3) mailaErakuslea.textContent = "2. Maila (Gehitu *)";
@@ -112,13 +112,9 @@ function aukeratuAusazkoEragiketa() {
     const eragiketak = lortuEragiketaEskuragarriak();
     const n = eragiketak.length;
 
-    // 1. Pisuak kalkulatu PROBABILITATE_OINARRIA erabiliz
     let pisuak = eragiketak.map((_, index) => Math.pow(PROBABILITATE_OINARRIA, n - 1 - index));
-
-    // 2. Batura zehatza kalkulatu (biribiltze-erroreak ekiditeko reduce erabiliz)
     let pisuOsoa = pisuak.reduce((batura, p) => batura + p, 0);
 
-    // 3. Zenbaki aleatorioa zozketatu
     let ausazkoZenbakia = Math.random() * pisuOsoa;
     let metatua = 0;
 
@@ -129,7 +125,6 @@ function aukeratuAusazkoEragiketa() {
         }
     }
 
-    // Badaezpadako itzulera
     return eragiketak[eragiketak.length - 1];
 }
 
@@ -206,10 +201,14 @@ function egiaztatuErantzuna() {
         puntuazioa++;
         geratzenDenDenbora += SARIA;
 
-        let mailaBerrikoEragiketak = Math.min(6, 2 + Math.floor(puntuazioa / 10));
+        let mailaBerrikoEragiketak = kalkulatuEragiketaKopurua(puntuazioa);
         if (mailaBerrikoEragiketak > unekoMailakoEragiketak) {
             geratzenDenDenbora += MAILA_IGOTZEKO_SARIA;
             unekoMailakoEragiketak = mailaBerrikoEragiketak;
+        }
+
+        if (geratzenDenDenbora > gehienezkoDenboraBisuala) {
+            geratzenDenDenbora = gehienezkoDenboraBisuala;
         }
 
         puntuazioErakuslea.textContent = puntuazioa;
@@ -230,11 +229,29 @@ function egiaztatuErantzuna() {
     sarreraErakuslea.textContent = unekoSarrera;
 }
 
+// Pantailako teklatuaren integrazioa
 teklak.forEach(tekla => {
     tekla.addEventListener('click', (e) => {
         e.preventDefault();
         kudeatuSarrera(tekla.dataset.val);
     });
+});
+
+// Ordenagailuko teklatuaren integrazioa
+document.addEventListener('keydown', (e) => {
+    if (e.key >= '0' && e.key <= '9') {
+        kudeatuSarrera(e.key);
+    }
+    else if (e.key === 'Backspace') {
+        kudeatuSarrera('del');
+    }
+    else if (e.key === 'Enter') {
+        if (amaieraGainjartzea.style.display === "flex") {
+            hasiJokoa();
+        } else {
+            kudeatuSarrera('ok');
+        }
+    }
 });
 
 berriroBotoia.addEventListener('click', hasiJokoa);
