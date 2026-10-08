@@ -6,6 +6,7 @@ const timerBar = document.getElementById('timerBar');
 const mathBoard = document.querySelector('.math-board');
 const endOverlay = document.getElementById('endOverlay');
 const finalScoreDisplay = document.getElementById('finalScore');
+const lastOperationDisplay = document.getElementById('lastOperation');
 const restartBtn = document.getElementById('restartBtn');
 const levelDisplay = document.getElementById('levelDisplay');
 const keys = document.querySelectorAll('.key');
@@ -19,7 +20,7 @@ let timeLeft = 60000;
 const maxVisualTime = 60000;
 
 const PENALTY = 5000;
-const REWARD = 2000;
+const REWARD = 1000;
 
 const OPERATIONS = ['+', '-', '*', '/'];
 
@@ -72,6 +73,10 @@ function updateTimerVisuals() {
 function endGame() {
     clearInterval(timer);
     finalScoreDisplay.textContent = score;
+
+    // Mostrar la ultima operacion y su resultado
+    lastOperationDisplay.textContent = questionDisplay.textContent + ' = ' + currentAnswer;
+
     endOverlay.style.display = "flex";
 }
 
