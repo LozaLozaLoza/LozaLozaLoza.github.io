@@ -19,7 +19,7 @@ let timeLeft = 60000;
 const maxVisualTime = 60000;
 
 const PENALTY = 5000;
-const REWARD = 1500;
+const REWARD = 2000;
 
 const OPERATIONS = ['+', '-', '*', '/'];
 
