@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+    <meta name="theme-color" content="#0a84ff">
+    <title>Math Rush</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Pantalla Principal de Juego -->
+        <div id="gameScreen" class="screen">
+            <header class="header">
+                <div class="brand">
+                    <h1>Math Rush</h1>
+                    <div class="subtitle" id="levelDisplay">Nivel 1 (Sumas y Restas)</div>
+                </div>
+                <div class="controls">
+                    <div class="score-box">
+                        <span class="label">PUNTOS</span>
+                        <span id="scoreDisplay" class="value">0</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="timer-container">
+                <div id="timerBar" class="timer-bar"></div>
+            </div>
+
+            <main class="main">
+                <div class="math-board">
+                    <div id="questionDisplay" class="question">?</div>
+                    <div id="inputDisplay" class="input-box"></div>
+                </div>
+
+                <div class="keypad">
+                    <button class="key" data-val="1">1</button>
+                    <button class="key" data-val="2">2</button>
+                    <button class="key" data-val="3">3</button>
+                    <button class="key" data-val="4">4</button>
+                    <button class="key" data-val="5">5</button>
+                    <button class="key" data-val="6">6</button>
+                    <button class="key" data-val="7">7</button>
+                    <button class="key" data-val="8">8</button>
+                    <button class="key" data-val="9">9</button>
+                    <button class="key action-key" data-val="del">DEL</button>
+                    <button class="key" data-val="0">0</button>
+                    <button class="key action-key submit-key" data-val="ok">OK</button>
+                </div>
+            </main>
+        </div>
+
+        <!-- Pantalla de Fin de Juego -->
+        <div id="endOverlay" class="menu-overlay" style="display: none;">
+            <div class="menu-card">
+                <h2>Tiempo Agotado!</h2>
+                <div class="menu-section" style="align-items: center;">
+                    <h3>Puntuacion Final</h3>
+                    <div id="finalScore" style="font-size: 48px; font-weight: 900; color: var(--accent);">0</div>
+                </div>
+                <button id="restartBtn" class="start-btn">VOLVER A JUGAR</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
