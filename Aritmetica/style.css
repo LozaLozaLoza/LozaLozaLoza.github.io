@@ -34,7 +34,7 @@ body {
     padding: 14px;
 }
 
-.app {
+.aplikazioa {
     max-width: 450px;
     margin: 0 auto;
     height: 100%;
@@ -42,49 +42,49 @@ body {
     flex-direction: column;
 }
 
-.screen {
+.pantaila {
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-.header {
+.goiburua {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
 }
 
-.brand h1 {
+.marka h1 {
     font-size: 18px;
     margin-bottom: 2px;
 }
 
-.subtitle {
+.azpititulua {
     font-size: 12px;
     color: var(--muted);
 }
 
-.score-box {
+.puntuazio-kutxa {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
 }
 
-.label {
+.etiketa {
     font-size: 10px;
     color: var(--muted);
     font-weight: bold;
     letter-spacing: 0.5px;
 }
 
-.value {
+.balioa {
     font-weight: 800;
     font-size: 20px;
     color: var(--accent);
 }
 
-.timer-container {
+.denbora-edukontzia {
     width: 100%;
     height: 12px;
     background: #e2e8f0;
@@ -93,25 +93,25 @@ body {
     margin-bottom: 20px;
 }
 
-.timer-bar {
+.denbora-barra {
     height: 100%;
     width: 100%;
     background: var(--accent);
     transition: width 0.1s linear, background-color 0.3s;
 }
 
-    .timer-bar.warning {
-        background: var(--accent-o);
-    }
+.abisua {
+    background: var(--accent-o);
+}
 
-.main {
+.nagusia {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.math-board {
+.mate-arbela {
     background: var(--card);
     border-radius: var(--radius);
     padding: 24px 16px;
@@ -123,22 +123,22 @@ body {
     transition: background-color 0.2s;
 }
 
-    .math-board.correct {
-        background: #e8f9ed;
-    }
+.zuzena {
+    background: #e8f9ed;
+}
 
-    .math-board.incorrect {
-        background: #ffeceb;
-    }
+.okerra {
+    background: #ffeceb;
+}
 
-.question {
+.galdera {
     font-size: 42px;
     font-weight: 800;
     text-align: center;
     letter-spacing: -1px;
 }
 
-.input-box {
+.sarrera-kutxa {
     height: 60px;
     width: 100%;
     background: #f1f5f9;
@@ -152,8 +152,8 @@ body {
     border: 2px solid rgba(0,0,0,0.05);
 }
 
-/* Teclado */
-.keypad {
+/* Teklatua */
+.teklatua {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
@@ -161,7 +161,7 @@ body {
     padding-bottom: 20px;
 }
 
-.key {
+.tekla {
     background: var(--card);
     border: 1px solid rgba(0,0,0,0.06);
     box-shadow: 0 4px 6px rgba(0,0,0,0.04);
@@ -175,30 +175,30 @@ body {
     user-select: none;
 }
 
-    .key:active {
+    .tekla:active {
         transform: scale(0.92);
         background: #f1f5f9;
     }
 
-.action-key {
+.ekintza-tekla {
     background: #f8fafc;
     color: var(--muted);
     font-size: 16px;
 }
 
-.submit-key {
+.bidali-tekla {
     background: var(--accent);
     color: white;
     border: none;
     font-size: 16px;
 }
 
-    .submit-key:active {
+    .bidali-tekla:active {
         background: #0070e0;
     }
 
-/* Overlay Final */
-.menu-overlay {
+/* Amaierako Pantaila */
+.menu-gainjartzea {
     position: fixed;
     inset: 0;
     background: rgba(244, 246, 249, 0.85);
@@ -209,7 +209,7 @@ body {
     z-index: 10000;
 }
 
-.menu-card {
+.menu-txartela {
     background: var(--card);
     width: 90%;
     max-width: 320px;
@@ -222,7 +222,13 @@ body {
     text-align: center;
 }
 
-.start-btn {
+.menu-atala {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hasi-botoia {
     background: var(--accent);
     color: white;
     font-size: 16px;
@@ -234,6 +240,6 @@ body {
     cursor: pointer;
 }
 
-    .start-btn:active {
+    .hasi-botoia:active {
         transform: scale(0.96);
     }

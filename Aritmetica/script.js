@@ -1,195 +1,242 @@
 // script.js
-const questionDisplay = document.getElementById('questionDisplay');
-const inputDisplay = document.getElementById('inputDisplay');
-const scoreDisplay = document.getElementById('scoreDisplay');
-const timerBar = document.getElementById('timerBar');
-const mathBoard = document.querySelector('.math-board');
-const endOverlay = document.getElementById('endOverlay');
-const finalScoreDisplay = document.getElementById('finalScore');
-const lastOperationDisplay = document.getElementById('lastOperation');
-const restartBtn = document.getElementById('restartBtn');
-const levelDisplay = document.getElementById('levelDisplay');
-const keys = document.querySelectorAll('.key');
+const galderaErakuslea = document.getElementById('galderaErakuslea');
+const sarreraErakuslea = document.getElementById('sarreraErakuslea');
+const puntuazioErakuslea = document.getElementById('puntuazioErakuslea');
+const denboraBarra = document.getElementById('denboraBarra');
+const mateArbela = document.querySelector('.mate-arbela');
+const amaieraGainjartzea = document.getElementById('amaieraGainjartzea');
+const azkenPuntuazioa = document.getElementById('azkenPuntuazioa');
+const azkenEragiketa = document.getElementById('azkenEragiketa');
+const berriroBotoia = document.getElementById('berriroBotoia');
+const mailaErakuslea = document.getElementById('mailaErakuslea');
+const teklak = document.querySelectorAll('.tekla');
 
-// Variables de estado
-let score = 0;
-let currentAnswer = null;
-let currentInput = "";
-let timer = null;
-let timeLeft = 60000;
-const maxVisualTime = 60000;
+// PARAMETROAK (Aldatu balio hau probabilitateekin jolasteko)
+const PROBABILITATE_OINARRIA = 1.5;
 
-const PENALTY = 5000;
-const REWARD = 2000;
+// Egoeraren aldagaiak
+let puntuazioa = 0;
+let unekoErantzuna = null;
+let unekoSarrera = "";
+let tenporizadorea = null;
+let geratzenDenDenbora = 60000;
+const gehienezkoDenboraBisuala = 60000;
+let unekoMailakoEragiketak = 2;
 
-const OPERATIONS = ['+', '-', '*', '/'];
+const ZIGORRA = 5000;
+const SARIA = 2000;
+const MAILA_IGOTZEKO_SARIA = 20000;
 
-function startGame() {
-    score = 0;
-    timeLeft = 60000;
-    currentInput = "";
-    scoreDisplay.textContent = score;
-    endOverlay.style.display = "none";
-    inputDisplay.textContent = "";
+const ERAGIKETAK = ['+', '-', '*', '/', 'MKT', 'ZKH'];
 
-    clearInterval(timer);
-    timer = setInterval(gameLoop, 50);
-
-    generateQuestion();
+// Euclidesen algoritmoa Zatitzaile Komun Handiena (ZKH) kalkulatzeko
+function lortuZkh(a, b) {
+    return b === 0 ? a : lortuZkh(b, a % b);
 }
 
-function gameLoop() {
-    timeLeft -= 50;
-    if (timeLeft <= 0) {
-        timeLeft = 0;
-        endGame();
+// Multiplo Komunetako Txikiena (MKT)
+function lortuMkt(a, b) {
+    return (a * b) / lortuZkh(a, b);
+}
+
+function hasiJokoa() {
+    puntuazioa = 0;
+    geratzenDenDenbora = 60000;
+    unekoSarrera = "";
+    unekoMailakoEragiketak = 2;
+    puntuazioErakuslea.textContent = puntuazioa;
+    amaieraGainjartzea.style.display = "none";
+    sarreraErakuslea.textContent = "";
+
+    clearInterval(tenporizadorea);
+    tenporizadorea = setInterval(jokoBegizta, 50);
+
+    sortuGaldera();
+}
+
+function jokoBegizta() {
+    geratzenDenDenbora -= 50;
+    if (geratzenDenDenbora <= 0) {
+        geratzenDenDenbora = 0;
+        amaituJokoa();
     }
-    updateTimerVisuals();
+    eguneratuDenboraBisualak();
 }
 
-function updateTimerVisuals() {
-    const x = timeLeft;
-    const M = maxVisualTime;
+function eguneratuDenboraBisualak() {
+    const x = geratzenDenDenbora;
+    const M = gehienezkoDenboraBisuala;
     const A = 0.1;
 
-    // Funcion matematica de engano visual
-    let visualTime = x * (1 + ((1 - A) / M) * (x - M));
+    // Irudipen bisuala sortzeko funtzio matematikoa
+    let denboraBisuala = x * (1 + ((1 - A) / M) * (x - M));
 
-    let percentage = (visualTime / M) * 100;
+    let ehunekoa = (denboraBisuala / M) * 100;
 
-    if (percentage > 100) percentage = 100;
-    if (percentage < 0) percentage = 0;
+    if (ehunekoa > 100) ehunekoa = 100;
+    if (ehunekoa < 0) ehunekoa = 0;
 
-    timerBar.style.width = percentage + '%';
+    denboraBarra.style.width = ehunekoa + '%';
 
-    // La alerta visual en base al tiempo real
-    if (timeLeft < 15000) {
-        timerBar.classList.add('warning');
+    // Alerta bisuala benetako denboran oinarrituta
+    if (geratzenDenDenbora < 15000) {
+        denboraBarra.classList.add('abisua');
     } else {
-        timerBar.classList.remove('warning');
+        denboraBarra.classList.remove('abisua');
     }
 }
 
-function endGame() {
-    clearInterval(timer);
-    finalScoreDisplay.textContent = score;
+function amaituJokoa() {
+    clearInterval(tenporizadorea);
+    azkenPuntuazioa.textContent = puntuazioa;
 
-    // Mostrar la ultima operacion y su resultado
-    lastOperationDisplay.textContent = questionDisplay.textContent + ' = ' + currentAnswer;
+    // Azken eragiketa eta erantzuna erakutsi
+    azkenEragiketa.textContent = galderaErakuslea.textContent + ' = ' + unekoErantzuna;
 
-    endOverlay.style.display = "flex";
+    amaieraGainjartzea.style.display = "flex";
 }
 
-function getAvailableOperations() {
-    let n = Math.min(4, 2 + Math.floor(score / 10));
+function lortuEragiketaEskuragarriak() {
+    let n = Math.min(6, 2 + Math.floor(puntuazioa / 10));
 
-    if (n === 2) levelDisplay.textContent = "Nivel 1 (Sumas, Restas)";
-    else if (n === 3) levelDisplay.textContent = "Nivel 2 (Anade Mult.)";
-    else levelDisplay.textContent = "Nivel 3 (Todas habilitadas)";
+    if (n === 2) mailaErakuslea.textContent = "1. Maila (+, -)";
+    else if (n === 3) mailaErakuslea.textContent = "2. Maila (Gehitu *)";
+    else if (n === 4) mailaErakuslea.textContent = "3. Maila (Gehitu /)";
+    else if (n === 5) mailaErakuslea.textContent = "4. Maila (Gehitu MKT)";
+    else mailaErakuslea.textContent = "5. Maila (Gehitu ZKH)";
 
-    return OPERATIONS.slice(0, n);
+    return ERAGIKETAK.slice(0, n);
 }
 
-function pickRandomOperation() {
-    const ops = getAvailableOperations();
-    const n = ops.length;
+function aukeratuAusazkoEragiketa() {
+    const eragiketak = lortuEragiketaEskuragarriak();
+    const n = eragiketak.length;
 
-    let weights = ops.map((_, index) => Math.pow(2, n - 1 - index));
-    let totalWeight = Math.pow(2, n) - 1;
+    // 1. Pisuak kalkulatu PROBABILITATE_OINARRIA erabiliz
+    let pisuak = eragiketak.map((_, index) => Math.pow(PROBABILITATE_OINARRIA, n - 1 - index));
 
-    let randomNum = Math.floor(Math.random() * totalWeight) + 1;
-    let cumulative = 0;
+    // 2. Batura zehatza kalkulatu (biribiltze-erroreak ekiditeko reduce erabiliz)
+    let pisuOsoa = pisuak.reduce((batura, p) => batura + p, 0);
 
-    for (let i = 0; i < weights.length; i++) {
-        cumulative += weights[i];
-        if (randomNum <= cumulative) {
-            return ops[i];
+    // 3. Zenbaki aleatorioa zozketatu
+    let ausazkoZenbakia = Math.random() * pisuOsoa;
+    let metatua = 0;
+
+    for (let i = 0; i < pisuak.length; i++) {
+        metatua += pisuak[i];
+        if (ausazkoZenbakia <= metatua) {
+            return eragiketak[i];
         }
     }
-    return ops[0];
+
+    // Badaezpadako itzulera
+    return eragiketak[eragiketak.length - 1];
 }
 
-function generateQuestion() {
-    const op = pickRandomOperation();
+function sortuGaldera() {
+    const erag = aukeratuAusazkoEragiketa();
 
-    let baseMax = 10 + Math.floor(score * 0.9);
+    let gehienezkoOinarria = 10 + Math.floor(puntuazioa * 0.9);
     let a, b, c;
 
-    switch (op) {
+    switch (erag) {
         case '+':
-            a = Math.floor(Math.random() * baseMax) + 1;
-            b = Math.floor(Math.random() * baseMax) + 1;
-            currentAnswer = a + b;
-            questionDisplay.textContent = a + ' + ' + b;
+            a = Math.floor(Math.random() * gehienezkoOinarria) + 1;
+            b = Math.floor(Math.random() * gehienezkoOinarria) + 1;
+            unekoErantzuna = a + b;
+            galderaErakuslea.textContent = a + ' + ' + b;
             break;
         case '-':
-            a = Math.floor(Math.random() * baseMax) + 1;
-            b = Math.floor(Math.random() * baseMax) + 1;
+            a = Math.floor(Math.random() * gehienezkoOinarria) + 1;
+            b = Math.floor(Math.random() * gehienezkoOinarria) + 1;
             c = a + b;
-            currentAnswer = a;
-            questionDisplay.textContent = c + ' - ' + b;
+            unekoErantzuna = a;
+            galderaErakuslea.textContent = c + ' - ' + b;
             break;
         case '*':
-            let maxMult = Math.max(4, Math.floor(baseMax / 2));
-            a = Math.floor(Math.random() * maxMult) + 2;
-            b = Math.floor(Math.random() * maxMult) + 2;
-            currentAnswer = a * b;
-            questionDisplay.textContent = a + ' * ' + b;
+            let gehienezkoBiderketa = Math.max(4, Math.floor(gehienezkoOinarria / 2));
+            a = Math.floor(Math.random() * gehienezkoBiderketa) + 2;
+            b = Math.floor(Math.random() * gehienezkoBiderketa) + 2;
+            unekoErantzuna = a * b;
+            galderaErakuslea.textContent = a + ' * ' + b;
             break;
         case '/':
-            let maxDiv = Math.max(4, Math.floor(baseMax / 2));
-            a = Math.floor(Math.random() * maxDiv) + 2;
-            b = Math.floor(Math.random() * maxDiv) + 2;
+            let gehienezkoZatiketa = Math.max(4, Math.floor(gehienezkoOinarria / 2));
+            a = Math.floor(Math.random() * gehienezkoZatiketa) + 2;
+            b = Math.floor(Math.random() * gehienezkoZatiketa) + 2;
             c = a * b;
-            currentAnswer = a;
-            questionDisplay.textContent = c + ' / ' + b;
+            unekoErantzuna = a;
+            galderaErakuslea.textContent = c + ' / ' + b;
+            break;
+        case 'MKT':
+            let gehienezkoMkt = Math.max(3, Math.floor(gehienezkoOinarria / 4));
+            a = Math.floor(Math.random() * gehienezkoMkt) + 2;
+            b = Math.floor(Math.random() * gehienezkoMkt) + 2;
+            unekoErantzuna = lortuMkt(a, b);
+            galderaErakuslea.textContent = 'MKT(' + a + ',' + b + ')';
+            break;
+        case 'ZKH':
+            let faktorea = Math.floor(Math.random() * Math.max(3, Math.floor(gehienezkoOinarria / 5))) + 2;
+            let biderk1 = Math.floor(Math.random() * 4) + 1;
+            let biderk2 = Math.floor(Math.random() * 4) + 1;
+            a = faktorea * biderk1;
+            b = faktorea * biderk2;
+            unekoErantzuna = lortuZkh(a, b);
+            galderaErakuslea.textContent = 'ZKH(' + a + ',' + b + ')';
             break;
     }
 }
 
-function handleInput(val) {
-    if (val === 'del') {
-        currentInput = currentInput.slice(0, -1);
-    } else if (val === 'ok') {
-        if (currentInput === "") return;
-        checkAnswer();
+function kudeatuSarrera(balioa) {
+    if (balioa === 'del') {
+        unekoSarrera = unekoSarrera.slice(0, -1);
+    } else if (balioa === 'ok') {
+        if (unekoSarrera === "") return;
+        egiaztatuErantzuna();
     } else {
-        if (currentInput.length < 5) {
-            currentInput += val;
+        if (unekoSarrera.length < 5) {
+            unekoSarrera += balioa;
         }
     }
-    inputDisplay.textContent = currentInput;
+    sarreraErakuslea.textContent = unekoSarrera;
 }
 
-function checkAnswer() {
-    if (parseInt(currentInput) === currentAnswer) {
-        score++;
-        timeLeft += REWARD;
-        scoreDisplay.textContent = score;
+function egiaztatuErantzuna() {
+    if (parseInt(unekoSarrera) === unekoErantzuna) {
+        puntuazioa++;
+        geratzenDenDenbora += SARIA;
 
-        mathBoard.classList.add('correct');
-        setTimeout(() => mathBoard.classList.remove('correct'), 150);
+        let mailaBerrikoEragiketak = Math.min(6, 2 + Math.floor(puntuazioa / 10));
+        if (mailaBerrikoEragiketak > unekoMailakoEragiketak) {
+            geratzenDenDenbora += MAILA_IGOTZEKO_SARIA;
+            unekoMailakoEragiketak = mailaBerrikoEragiketak;
+        }
 
-        currentInput = "";
-        generateQuestion();
+        puntuazioErakuslea.textContent = puntuazioa;
+
+        mateArbela.classList.add('zuzena');
+        setTimeout(() => mateArbela.classList.remove('zuzena'), 150);
+
+        unekoSarrera = "";
+        sortuGaldera();
     } else {
-        timeLeft -= PENALTY;
+        geratzenDenDenbora -= ZIGORRA;
 
-        mathBoard.classList.add('incorrect');
-        setTimeout(() => mathBoard.classList.remove('incorrect'), 150);
+        mateArbela.classList.add('okerra');
+        setTimeout(() => mateArbela.classList.remove('okerra'), 150);
 
-        currentInput = "";
+        unekoSarrera = "";
     }
-    inputDisplay.textContent = currentInput;
+    sarreraErakuslea.textContent = unekoSarrera;
 }
 
-keys.forEach(key => {
-    key.addEventListener('click', (e) => {
+teklak.forEach(tekla => {
+    tekla.addEventListener('click', (e) => {
         e.preventDefault();
-        handleInput(key.dataset.val);
+        kudeatuSarrera(tekla.dataset.val);
     });
 });
 
-restartBtn.addEventListener('click', startGame);
+berriroBotoia.addEventListener('click', hasiJokoa);
 
-startGame();
+hasiJokoa();

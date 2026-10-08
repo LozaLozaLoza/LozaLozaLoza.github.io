@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="eu">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
@@ -8,65 +8,65 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app">
-        <!-- Pantalla Principal de Juego -->
-        <div id="gameScreen" class="screen">
-            <header class="header">
-                <div class="brand">
+    <div class="aplikazioa">
+        <!-- Jokoaren Pantaila Nagusia -->
+        <div id="jokoPantaila" class="pantaila">
+            <header class="goiburua">
+                <div class="marka">
                     <h1>Math Rush</h1>
-                    <div class="subtitle" id="levelDisplay">Nivel 1 (Sumas y Restas)</div>
+                    <div class="azpititulua" id="mailaErakuslea">1. Maila (+ eta -)</div>
                 </div>
-                <div class="controls">
-                    <div class="score-box">
-                        <span class="label">PUNTOS</span>
-                        <span id="scoreDisplay" class="value">0</span>
+                <div class="kontrolak">
+                    <div class="puntuazio-kutxa">
+                        <span class="etiketa">PUNTUAK</span>
+                        <span id="puntuazioErakuslea" class="balioa">0</span>
                     </div>
                 </div>
             </header>
 
-            <div class="timer-container">
-                <div id="timerBar" class="timer-bar"></div>
+            <div class="denbora-edukontzia">
+                <div id="denboraBarra" class="denbora-barra"></div>
             </div>
 
-            <main class="main">
-                <div class="math-board">
-                    <div id="questionDisplay" class="question">?</div>
-                    <div id="inputDisplay" class="input-box"></div>
+            <main class="nagusia">
+                <div class="mate-arbela">
+                    <div id="galderaErakuslea" class="galdera">?</div>
+                    <div id="sarreraErakuslea" class="sarrera-kutxa"></div>
                 </div>
 
-                <div class="keypad">
-                    <button class="key" data-val="1">1</button>
-                    <button class="key" data-val="2">2</button>
-                    <button class="key" data-val="3">3</button>
-                    <button class="key" data-val="4">4</button>
-                    <button class="key" data-val="5">5</button>
-                    <button class="key" data-val="6">6</button>
-                    <button class="key" data-val="7">7</button>
-                    <button class="key" data-val="8">8</button>
-                    <button class="key" data-val="9">9</button>
-                    <button class="key action-key" data-val="del">DEL</button>
-                    <button class="key" data-val="0">0</button>
-                    <button class="key action-key submit-key" data-val="ok">OK</button>
+                <div class="teklatua">
+                    <button class="tekla" data-val="1">1</button>
+                    <button class="tekla" data-val="2">2</button>
+                    <button class="tekla" data-val="3">3</button>
+                    <button class="tekla" data-val="4">4</button>
+                    <button class="tekla" data-val="5">5</button>
+                    <button class="tekla" data-val="6">6</button>
+                    <button class="key tekla" data-val="7">7</button>
+                    <button class="tekla" data-val="8">8</button>
+                    <button class="tekla" data-val="9">9</button>
+                    <button class="tekla ekintza-tekla" data-val="del">EZAB</button>
+                    <button class="tekla" data-val="0">0</button>
+                    <button class="tekla ekintza-tekla bidali-tekla" data-val="ok">OK</button>
                 </div>
             </main>
         </div>
 
-        <!-- Pantalla de Fin de Juego -->
-        <div id="endOverlay" class="menu-overlay" style="display: none;">
-            <div class="menu-card">
-                <h2>Tiempo Agotado!</h2>
+        <!-- Amaierako Pantaila -->
+        <div id="amaieraGainjartzea" class="menu-gainjartzea" style="display: none;">
+            <div class="menu-txartela">
+                <h2>Denbora amaituta!</h2>
 
-                <div class="menu-section" style="align-items: center;">
-                    <h3>Puntuacion Final</h3>
-                    <div id="finalScore" style="font-size: 48px; font-weight: 900; color: var(--accent);">0</div>
+                <div class="menu-atala" style="align-items: center;">
+                    <h3>Azken Puntuazioa</h3>
+                    <div id="azkenPuntuazioa" style="font-size: 48px; font-weight: 900; color: var(--accent);">0</div>
                 </div>
 
-                <div class="menu-section" style="align-items: center; margin-top: -10px;">
-                    <h3>Ultima operacion</h3>
-                    <div id="lastOperation" style="font-size: 22px; font-weight: 700; color: #0b1220;"></div>
+                <div class="menu-atala" style="align-items: center; margin-top: -10px;">
+                    <h3>Azken eragiketa</h3>
+                    <div id="azkenEragiketa" style="font-size: 22px; font-weight: 700; color: #0b1220;"></div>
                 </div>
 
-                <button id="restartBtn" class="start-btn">VOLVER A JUGAR</button>
+                <button id="berriroBotoia" class="hasi-botoia">BERRIRO JOLASTU</button>
             </div>
         </div>
     </div>
