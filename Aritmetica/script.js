@@ -20,7 +20,7 @@ let timeLeft = 60000;
 const maxVisualTime = 60000;
 
 const PENALTY = 5000;
-const REWARD = 1000;
+const REWARD = 2000;
 
 const OPERATIONS = ['+', '-', '*', '/'];
 
@@ -112,7 +112,7 @@ function pickRandomOperation() {
 function generateQuestion() {
     const op = pickRandomOperation();
 
-    let baseMax = 10 + Math.floor(score * 1.5);
+    let baseMax = 10 + Math.floor(score * 0.9);
     let a, b, c;
 
     switch (op) {
